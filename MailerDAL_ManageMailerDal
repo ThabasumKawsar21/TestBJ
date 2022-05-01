@@ -1,0 +1,668 @@
+
+namespace MailerDAL
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Configuration;
+    using System.Data;
+    using System.Data.SqlClient;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
+    using System.Text;
+    using ExceptionHandling;
+    using MailerModel;
+    using AzureSQLHelper;
+
+    /// <summary>
+    /// Manage Mailer Dal
+    /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", 
+            "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable", 
+            Scope = "type",
+            Justification = "Needs to be a method because it's a service operation")]
+    public class ManageMailerDal
+    {
+        #region Declarations
+        /// <summary>
+        /// Database Connection Class Object
+        /// </summary>
+        private DBConnect connectDB = new DBConnect();
+
+        /// <summary>
+        /// Connection object
+        /// </summary>
+        private SqlConnection sqlConn;
+
+        /// <summary>
+        /// Command object
+        /// </summary>
+        private SqlCommand sqlCmd;
+
+        /// <summary>
+        /// Request List object
+        /// </summary>
+        private List<ClientRequests> lstRequests = new List<ClientRequests>();
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Get Client Visit Requests
+        /// </summary>
+        /// <returns>Returns List object</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design",
+           "CA1002:DoNotExposeGenericLists",
+           Scope = "member",
+           Justification = "valid")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design",
+            "CA1024:UsePropertiesWhereAppropriate",
+            Scope = "member",
+            Justification = "Needs to be a method because it's a service operation")]
+
+        public List<ClientRequests> GetClientVisitRequests()
+        {
+                SqlCommand cmd;
+                SqlConnection con = null;
+            try
+            {
+                string conn = ConfigurationManager.ConnectionStrings["VMSConnectionString"].ToString();
+                con = new SqlConnection(conn);
+                ////con = this.connectDB.Connectionstring();
+                cmd = new SqlCommand("GetClientVisitRequestDetails", con);
+                using (con)
+                {
+                    con.OpenWithMSI();
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    using (IDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        this.lstRequests.Add(new ClientRequests
+                        {
+                            RequestID = Convert.ToInt32(reader["RequestID"]),
+                            HostName = Convert.ToString(reader["HostName"]),
+                            HostID = Convert.ToString(reader["HostID"]),
+                            VisitDate = Convert.ToDateTime(reader["FromDate"]).ToString("dd/MM/yyyy"),
+                            LocationName = Convert.ToString(reader["LocationName"]),
+                            LocationCity = Convert.ToString(reader["LocationCity"]),
+                            ClientFirstName = Convert.ToString(reader["ClientFirstName"]),
+                            ClientLastName = Convert.ToString(reader["ClientLastName"])
+                        });
+                    }
+
+                    reader.Close();
+                }
+            }
+            }
+            catch (Exception ex)
+            {
+                this.LogBatchHistory(("Batch error GetClientVisitRequests " + ex).Substring(0, 200), "NULL");
+                ////ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+            }
+
+            return this.lstRequests;
+        }
+
+        /// <summary>
+        /// Log Batch History
+        /// </summary>
+        /// <param name="message">message string</param>
+        /// <param name="referenceId">referenceId string</param>
+        public void LogBatchHistory(string message, string ReferenceID)
+        {
+            try
+            {
+                 this.sqlConn = this.connectDB.Connectionstring();
+                 using (this.sqlConn)
+                 {
+                     this.sqlConn.OpenWithMSI();
+                     this.sqlCmd = new SqlCommand("ServiceHistory", this.sqlConn);
+                     this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                     this.sqlCmd.Parameters.AddWithValue("@Message", message);
+                    if ((ReferenceID != null) && (!ReferenceID.Any()))
+                    {
+                        this.sqlCmd.Parameters.AddWithValue("@RefId", Convert.ToInt32(ReferenceID));
+                    }
+                    else
+                    {
+                        this.sqlCmd.Parameters.AddWithValue("@RefId", DBNull.Value);
+                    }
+
+                     this.sqlCmd.ExecuteNonQuery();
+                 }
+            }
+            catch (Exception ex)
+            {
+                ////ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+            }
+        }
+
+        #endregion
+        /// <summary>
+        /// get details for mail
+        /// </summary>
+        /// <returns>mail details</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "can be suppressed")]
+        public DataTable GetDetailsForMailDAL()
+        {
+            DataTable maildetails = new DataTable();
+            try
+            {
+                this.sqlConn = this.connectDB.Connectionstring();
+
+                using (this.sqlConn)
+                {
+                    this.sqlCmd = new SqlCommand("Get_DetailsToSendMail", this.sqlConn);
+                    this.sqlConn.OpenWithMSI();
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    using (SqlDataReader dr = this.sqlCmd.ExecuteReader())
+                    {
+                        maildetails.Load(dr);
+                        dr.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.LogBatchHistory(("Batch error GetDetailsForMailDAL " + ex).Substring(0, 200), "NULL");
+                ////ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+
+            return maildetails;
+        }
+
+        /// <summary>
+        /// get details for mail
+        /// </summary>
+        /// <returns>mail details</returns>
+        public DataTable GetRemainderMailDetails()
+        {
+            DataTable remaindermaildetails = new DataTable();
+            try
+            {
+                this.sqlConn = this.connectDB.Connectionstring();
+
+                using (this.sqlConn)
+                {
+                    this.sqlCmd = new SqlCommand("RemainderPassCollect", this.sqlConn);
+                    this.sqlConn.OpenWithMSI();
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    using (SqlDataReader dr = this.sqlCmd.ExecuteReader())
+                    {
+                        remaindermaildetails.Load(dr);
+                        dr.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.LogBatchHistory(("Batch error GetRemainderMailDetails " + ex).Substring(0, 200), "NULL");
+                ////ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+
+            return remaindermaildetails;
+        }
+
+        /// <summary>
+        /// get details for mail
+        /// </summary>
+        /// <returns>mail details</returns>
+        public DataTable GetPassReturnRemainderMailDetails()
+        {
+            DataTable passreturnremaindermaildetails = new DataTable();
+            try
+            {
+                this.sqlConn = this.connectDB.Connectionstring();
+
+                using (this.sqlConn)
+                {
+                    this.sqlCmd = new SqlCommand("RemainderPassReturn", this.sqlConn);
+                    this.sqlConn.OpenWithMSI();
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    using (SqlDataReader dr = this.sqlCmd.ExecuteReader())
+                    {
+                        passreturnremaindermaildetails.Load(dr);
+                        dr.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.LogBatchHistory(("Batch error GetPassReturnRemainderMailDetails " + ex).Substring(0, 200), "NULL");
+                ////ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+
+            return passreturnremaindermaildetails;
+        }
+
+        /// <summary>
+        /// get user details
+        /// </summary>
+        /// <param name="associateID">associate id</param>
+        /// <returns>host details</returns>
+        public DataTable GetUserDetails(string associateID)
+        {
+            DataTable hostdetails = new DataTable();
+            try
+            {
+                this.sqlConn = this.connectDB.Connectionstring();
+
+                using (this.sqlConn)
+                {
+                    this.sqlCmd = new SqlCommand("GetAssociateDetails_New", this.sqlConn);
+                    this.sqlConn.OpenWithMSI();
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    this.sqlCmd.Parameters.AddWithValue("@AssociateId", associateID);
+                    using (SqlDataReader dr = this.sqlCmd.ExecuteReader())
+                    {
+                        hostdetails.Load(dr);
+                        dr.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.LogBatchHistory(("Batch error GetUserDetails " + ex).Substring(0, 200), "NULL");
+                ////ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+
+            return hostdetails;
+        }
+
+        /// <summary>
+        /// Get Security Head Details
+        /// </summary>
+        /// <param name="facility">the facility</param>
+        /// <returns>security head details</returns>
+        public DataTable GetSecurityHeadDetails(string facility)
+            {
+            DataTable securityheaddetails = new DataTable();
+            try
+                {
+                this.sqlConn = this.connectDB.Connectionstring();
+
+                using (this.sqlConn)
+                    {
+                    this.sqlCmd = new SqlCommand("GetSecurityHeadDetails", this.sqlConn);
+                    this.sqlConn.OpenWithMSI();
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    this.sqlCmd.Parameters.AddWithValue("@CountryCityFacility", facility);
+                    using (SqlDataReader dr = this.sqlCmd.ExecuteReader())
+                        {
+                        securityheaddetails.Load(dr);
+                        dr.Close();
+                        }
+                    }
+                }
+            catch (Exception ex)
+                {
+                this.LogBatchHistory(("Batch error GetSecurityHeadDetails " + ex).Substring(0, 200), "NULL");
+                ////ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+                }
+            finally
+                {
+                this.sqlConn.Close();
+                }
+
+            return securityheaddetails;
+            }
+
+        /// <summary>
+        /// update mailer flag
+        /// </summary>
+        /// <param name="reqeustID">request id</param>
+        public void UpdateMailerFlag(List<String> UpdateFlagReqID,string ParentrefID)
+        {
+            try
+            {
+                  this.sqlConn = this.connectDB.Connectionstring();
+                
+                using (this.sqlConn)
+                {
+                    this.sqlConn.OpenWithMSI();
+                    foreach (var item in UpdateFlagReqID)
+                    {
+                        this.sqlCmd = new SqlCommand("UpdateMailFlag", this.sqlConn);                   
+                        this.sqlCmd.CommandType = CommandType.StoredProcedure;                    
+                        this.sqlCmd.Parameters.AddWithValue("@RequestID", item.ToString());                                        
+                       this.sqlCmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                string msg = "Batch error UpdateMailerFlag " + ex;
+                int len = msg.Length;
+                int messagelength = 0;
+                if (len >= 8000)
+                {
+                    messagelength = 8000;
+                }
+                else
+                {
+                    messagelength = len;
+                }
+                this.LogBatchHistory(("Batch error UpdateMailerFlag " + ex).Substring(0, messagelength), ParentrefID);
+                ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+        }
+
+        /// <summary>
+        /// update mailer flag
+        /// </summary>
+        /// <param name="parentID">parent ID</param>
+        /// <param name="remaindercount">remainder count</param>
+        public void UpdateRemainderCollectFlag(int parentID, int remaindercount)
+        {
+            try
+            {
+                this.sqlConn = this.connectDB.Connectionstring();
+
+                using (this.sqlConn)
+                {
+                    this.sqlCmd = new SqlCommand("UpdateRemainderPassCollectCount", this.sqlConn);
+                    this.sqlConn.OpenWithMSI();
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    this.sqlCmd.Parameters.AddWithValue("@remaindercount", remaindercount);
+                    this.sqlCmd.Parameters.AddWithValue("@ParentreferenceID", parentID);
+                    this.sqlCmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                this.LogBatchHistory(("Batch error UpdateRemainderCollectFlag " + ex).Substring(0, 200), parentID.ToString());
+                ////ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+        }
+
+        /// <summary>
+        /// update mailer flag
+        /// </summary>
+        /// <param name="parentID">parent ID</param>
+        /// <param name="remaindercount">remainder count</param>
+        public void UpdateRemainderReturnFlag(int parentID, int remaindercount)
+        {
+            try
+            {
+                this.sqlConn = this.connectDB.Connectionstring();
+
+                using (this.sqlConn)
+                {
+                    this.sqlCmd = new SqlCommand("UpdateRemainderPassReturnCount", this.sqlConn);
+                    this.sqlConn.OpenWithMSI();
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    this.sqlCmd.Parameters.AddWithValue("@remaindercount", remaindercount);
+                    this.sqlCmd.Parameters.AddWithValue("@ParentreferenceID", parentID);
+                    this.sqlCmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                this.LogBatchHistory(("Batch error UpdateRemainderReturnFlag " + ex).Substring(0, 200), parentID.ToString());
+                ////ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+        }
+
+        /// <summary>
+        /// Update Outlook ID
+        /// </summary>
+        /// <param name="reqeustID">request ID</param>
+        /// <param name="guid">g u id</param>
+        public void UpdateOutlookNotificationGuid(string reqeustID, string guid)
+        {
+            try
+            {
+                this.sqlConn = this.connectDB.Connectionstring();
+
+                using (this.sqlConn)
+                {
+                    this.sqlCmd = new SqlCommand("VMS_UpdateMailerGUID", this.sqlConn);
+                    this.sqlConn.OpenWithMSI();
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    this.sqlCmd.Parameters.AddWithValue("@RequestId", Convert.ToInt32(reqeustID));
+                    this.sqlCmd.Parameters.AddWithValue("@GUID", guid);
+                    this.sqlCmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                this.LogBatchHistory(("Batch error UpdateOutlookNotificationGuid " + ex).Substring(0, 200), reqeustID);
+                ////ExceptionLogger.ExceptionLogging(ex);
+                throw ex;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+        }
+
+        /// <summary>
+        /// get visitors
+        /// </summary>
+        /// <param name="parentReferenceId">parent Reference Id</param>  
+        /// <returns>data table</returns> 
+        public DataTable GetClientRequestwithParentrefernceID(int parentReferenceId)
+        {
+            string strSql = "GetClientDetailswithParentIDMailFlag";
+
+            DataTable clientdetails = new DataTable();
+            SqlCommand cmd;
+            SqlConnection con = null;
+            try
+            {
+                //string conn = ConfigurationManager.ConnectionStrings["VMSConnectionString"].ToString();
+                this.sqlConn = this.connectDB.Connectionstring();
+                using (this.sqlConn)
+                {
+                    this.sqlConn.OpenWithMSI();
+                    //cmd = new SqlCommand(strSql, this.sqlConn);
+                    //cmd.CommandType = CommandType.StoredProcedure;
+                    this.sqlCmd = new SqlCommand("GetClientDetailswithParentIDMailFlag", this.sqlConn);
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    this.sqlCmd.Parameters.Add("@ParentReferenceId", SqlDbType.Int).Value = parentReferenceId;
+                    SqlDataAdapter adp = new SqlDataAdapter(this.sqlCmd);
+                    adp.Fill(clientdetails);
+                    return clientdetails;
+                }
+            }
+            catch (Exception exception)
+            {
+                throw exception;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+        }
+
+
+        /// <summary>
+        /// get visitors
+        /// </summary>
+        /// <param name="parentReferenceId">parent Reference Id</param>  
+        /// <returns>data table</returns> 
+        public DataTable GetRequestwithParentrefernceID(int parentReferenceId,string Purpose)
+        {
+            string strSql = "GetVisitorDetailswithParentIDMailFlag";
+
+            DataTable clientdetails = new DataTable();
+            SqlCommand cmd;
+            SqlConnection con = null;
+            try
+            {
+                //string conn = ConfigurationManager.ConnectionStrings["VMSConnectionString"].ToString();
+                this.sqlConn = this.connectDB.Connectionstring();
+                using (this.sqlConn)
+                {
+                    this.sqlConn.OpenWithMSI();
+                    //cmd = new SqlCommand(strSql, this.sqlConn);
+                    //cmd.CommandType = CommandType.StoredProcedure;
+                    this.sqlCmd = new SqlCommand("GetVisitorDetailswithParentIDMailFlag", this.sqlConn);
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    this.sqlCmd.Parameters.Add("@ParentReferenceId", SqlDbType.Int).Value = parentReferenceId;
+                    this.sqlCmd.Parameters.Add("@Purpose", SqlDbType.VarChar).Value = Purpose;
+                    SqlDataAdapter adp = new SqlDataAdapter(this.sqlCmd);
+                    adp.Fill(clientdetails);
+                    return clientdetails;
+                }
+            }
+            catch (Exception exception)
+            {
+                throw exception;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+        }
+
+        /// <summary>
+        /// get visitors
+        /// </summary>
+        /// <param name="parentReferenceId">parent Reference Id</param>  
+        /// <returns>data table</returns> 
+        public DataTable GetDatestwithParentrefernceID(int parentReferenceId)
+        {
+            string strSql = "GetAllVisitDetailsByRequestID";
+
+            DataTable clientdetails = new DataTable();
+            SqlCommand cmd;
+            SqlConnection con = null;
+            try
+            {
+                //string conn = ConfigurationManager.ConnectionStrings["VMSConnectionString"].ToString();
+                this.sqlConn = this.connectDB.Connectionstring();
+                using (this.sqlConn)
+                {
+                    this.sqlConn.OpenWithMSI();
+                    this.sqlCmd = new SqlCommand("GetAllVisitDetailsByRequestID", this.sqlConn);
+                    this.sqlCmd.CommandType = CommandType.StoredProcedure;
+                    this.sqlCmd.Parameters.Add("@RequestId", SqlDbType.Int).Value = parentReferenceId; 
+                    SqlDataAdapter adp = new SqlDataAdapter(this.sqlCmd);
+                    adp.Fill(clientdetails);
+                    return clientdetails;
+                }
+            }
+            catch (Exception exception)
+            {
+                throw exception;
+            }
+            finally
+            {
+                this.sqlConn.Close();
+            }
+        }
+
+
+        /// <summary>
+        /// Get list of Visitor ID
+        /// </summary>
+        /// <param name="requestID">request ID</param>
+        /// <returns>files table</returns>
+        private DataTable FillRequestID(int requestID)
+        {
+            DataTable table = new DataTable();
+            table.Columns.Add("RequestID", typeof(int));
+
+                table.Rows.Add(requestID);
+
+            return table;
+        }
+        /// <summary>
+        /// Function to get Checkin details of  visitors
+        /// </summary>
+        /// <param name=""></param>
+        /// <returns></returns>
+        public DataTable GetVisitorCheckinDeatilsforMailProcess()
+        {
+            DataTable dataTable = new DataTable();
+            try
+            {
+
+                string conn = ConfigurationManager.ConnectionStrings["VMSConnectionString"].ToString();
+                SqlConnection con = new SqlConnection(conn);
+                con.OpenWithMSI();
+                SqlCommand cmd;
+                cmd = new SqlCommand("GetVisitorCardInfoForCheck_inMailProcess", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                // this will query your database and return the result to your datatable
+                da.Fill(dataTable);
+                con.Close();
+                da.Dispose();
+                return dataTable;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        /// <summary>
+        /// Function to get checkout details of visitors
+        /// </summary>
+        /// <param name=""></param>
+        /// <returns></returns>
+        public DataTable GetVisitorCheckoutDeatilsforMailProcess()
+        {
+            DataTable dataTable = new DataTable();
+            try
+            {
+
+                string conn = ConfigurationManager.ConnectionStrings["VMSConnectionString"].ToString();
+                SqlConnection con = new SqlConnection(conn);
+                con.OpenWithMSI();
+                SqlCommand cmd;
+                cmd = new SqlCommand("GetVisitorCardInfoForCheckoutMailProcess", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                // this will query your database and return the result to your datatable
+                da.Fill(dataTable);
+                con.Close();
+                da.Dispose();
+                return dataTable;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+    }
+}
