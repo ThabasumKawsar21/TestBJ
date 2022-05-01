@@ -1,0 +1,1950 @@
+// -----------------------------------------------------------------------
+// <copyright file="MailNotification.cs" company="CTS">
+//     Copyright (c) . All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
+namespace BusinessManager
+{
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.ServiceModel;
+    using System.Text;
+    using System.Web;
+    using System.Xml.Linq;
+    using System.Xml.Serialization;
+    using ExceptionHandling;
+    using MailerBLL;
+    using MailerBLL.OneCommunicatorServiceClient;
+    using System.Data;
+    using MailerModel;
+    using static MailerModel.MailTemplate;
+
+
+
+    /// <summary>
+    /// To Define Mail Notification
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance",
+            "CA1804:RemoveUnusedLocals",
+            Justification = "Justification ",
+            MessageId = "returnVal",
+            Scope = "member")]
+    public class MailNotification
+    {
+        /// <summary>
+        /// Create an instance of Communicator Class
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", 
+            "CA1823:AvoidUnusedPrivateFields", 
+            Justification = "Justification ", 
+            Scope = "member")]
+        private CommunicatorBLL communicatorResource = new CommunicatorBLL();
+
+        /// <summary>
+        /// Send Mail
+        /// </summary>
+        /// <param name="hostId">host Id</param>
+        /// <param name="hostName">host Name</param>
+        /// <param name="fromDate">from Date</param>
+        /// <param name="requestId">request Id</param>
+        /// <param name="locationName">location Name</param>
+        /// <param name="locationCity">location City</param>
+        /// <param name="clientFirstName">client First Name</param>
+        /// <param name="clientLastName">client Last Name</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance",
+            "CA1804:RemoveUnusedLocals",
+            Justification = "Justification ",
+            MessageId = "returnVal",
+            Scope = "member")]
+        public void SendMailToHost(
+             string hostId,
+             string hostName,
+             string fromDate,
+             string requestId,
+            string locationName,
+            string locationCity,
+            string clientFirstName,
+            string clientLastName)
+        {
+            ////TemplateParameters templateParameters = new TemplateParameters();
+            ////TransactionParameters transactioParameters = new TransactionParameters();
+            ////templateParameters.HostID = hostId.Trim();
+            ////templateParameters.HostName = hostName.Trim();
+            ////templateParameters.FromDate = fromDate.Trim();
+            ////templateParameters.RequestID = Convert.ToInt32(requestId);
+            ////templateParameters.LocationName = locationName;
+            ////templateParameters.LocationCity = locationCity;
+            ////templateParameters.ClientFirstName = clientFirstName;
+            ////templateParameters.ClientLastName = clientLastName;
+
+            ////OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters = new OneCommunicatorTransactionParameters();
+            ////oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            ////oneCommunicatorTransactionParameters.Process = "1CClientVisitNotification";
+            ////oneCommunicatorTransactionParameters.Recipients = hostId;
+            ////oneCommunicatorTransactionParameters.RequestId = requestId.Trim();
+            ////Email email = new Email();
+            ////email.TemplateParameters = templateParameters;
+
+            ////ChannelParameters channelParameters = new ChannelParameters();
+            ////channelParameters.Email = email;
+
+            ////OneCommunicator oneCommunicator = new OneCommunicator();
+            ////oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            ////oneCommunicator.ChannelParameters = channelParameters;
+            ////XDocument xmlDocument = null;
+            ////RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            RequestUnifiedVASContractClient objOneCommEmailClient = new RequestUnifiedVASContractClient();
+            string returnVal = string.Empty;
+            try
+            {
+                var requestXML = new StringBuilder();
+                requestXML.Append("<OneCommunicator version=\"1\">");
+                requestXML.Append("<TransactionParameters>");
+                requestXML.Append("<GlobalAppId>116</GlobalAppId>");
+                requestXML.Append("<Process>1CClientVisitNotification</Process>");
+                requestXML.Append("<RequestId>" + requestId + "</RequestId>");
+                requestXML.Append("<Recipients>" + hostId + "</Recipients>");
+                requestXML.Append("</TransactionParameters>");
+                requestXML.Append("<ChannelParameters>");
+                requestXML.Append("<Email>");
+                requestXML.Append("<CC/>");
+                requestXML.Append("<BCC/>");
+                requestXML.Append("<TemplateParameters>");
+                requestXML.Append("<ClientLastName>" + clientLastName + "</ClientLastName>");
+                requestXML.Append("<ClientFirstName>" + clientFirstName + "</ClientFirstName>");
+                requestXML.Append("<LocationCity>" + locationCity + "</LocationCity>");
+                requestXML.Append("<LocationName>" + locationName + "</LocationName>");
+                requestXML.Append("<RequestID>" + requestId + "</RequestID>");
+                requestXML.Append("<FromDate>" + fromDate + "</FromDate>");
+                requestXML.Append("<HostName>" + hostName + "</HostName>");
+                requestXML.Append("<HostID>" + hostId + "</HostID>");
+                requestXML.Append("</TemplateParameters>");
+                requestXML.Append("</Email>");
+                requestXML.Append("</ChannelParameters>");
+                requestXML.Append("</OneCommunicator>");
+                
+                returnVal = objOneCommEmailClient.Notify(requestXML.ToString(), null);
+
+                ////XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                ////StringBuilder approvalBuilder = new StringBuilder();
+                ////StringWriter approvalWriter = new StringWriter(approvalBuilder);
+                ////xmlSerializerEApproval.Serialize(approvalWriter, oneCommunicator);
+                ////xmlDocument = XDocument.Load(new StringReader(approvalBuilder.ToString()));
+                ////requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                ////returnVal = requestUnifiedVASContractClient.Notify(xmlDocument.ToString(), null);
+            }
+            catch (Exception ex)
+            {
+                ExceptionLogger.ExceptionLogging(ex);
+            }
+            finally
+            {
+                if (objOneCommEmailClient != null && objOneCommEmailClient.State != CommunicationState.Closed)
+                {
+                    objOneCommEmailClient.Close();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Send Check in To Host
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostMailID">host Mail ID</param>
+        /// <param name="hostFirstName">host First Name</param>
+        /// <param name="strVisitorName">visitor name</param>
+        /// <param name="strCompany">company name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strCity">city name</param>
+        /// <param name="strVisitorType">visitor type</param>
+        /// <param name="serverPath">Server Path</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request ID</param>
+        /// <param name="strLink">link value</param>
+        /// <returns>Returns a value</returns>
+        public string SendCheckinToHost(
+            string hostID,
+            string hostMailID,
+            string hostFirstName,
+            string strVisitorName,
+            string strCompany,
+            string strFacility,
+            string strCity,
+            string strVisitorType,
+            string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string strLink,
+             string summary, string summaryJSON, string contentJSON, string templateID, string content, string title)
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = hostID.Trim();
+            templateParameters.HostMailID = hostMailID.Trim();
+            templateParameters.HostFirstName = hostFirstName.Trim();
+            templateParameters.VisitorName = strVisitorName.Trim();
+            templateParameters.Company = strCompany.Trim();
+            templateParameters.Link = strLink.Trim();
+            templateParameters.FromDate = strFromDate.Trim();
+            templateParameters.ToDate = strToDate.Trim();
+            templateParameters.City = strCity.Trim();
+            templateParameters.VisitorType = strVisitorType.Trim();
+            templateParameters.Facility = strFacility.Trim();
+            templateParameters.ServerPath = serverPath;
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            oneCommunicatorTransactionParameters.Process = "1CVisitorRequestSubmitProcess";
+            ////VMSConstants.VMSConstants.VisitorRequestSubmit; // "1CVisitorRequestSubmitProcess";
+            //// oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            // Mobile info cards 
+            Mobile mobile = new Mobile();
+            mobile.Summary = summary;
+            mobile.SummaryJSON = summaryJSON;
+            mobile.TemplateID = templateID;
+            mobile.Content = content;
+            mobile.ContentJSON = contentJSON;
+            mobile.Title = title;
+            //End Changes mobile
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+
+            //SMS sms = new SMS();
+            ////// sms.TransactionParameters = transactioParameters;
+            //sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry for " +
+            //    strVisitorName + " has been submitted successfully.Express CheckIn code:" +
+            //    requestID + ".Regards,Physical Security.";
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            //channelParameters.SMS = sms;
+            // Mobile info cards 
+            channelParameters.Mobile = mobile;
+            //End Changes mobile
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+                
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(xmlDocument.ToString(), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Check in To Host
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostMailID">host Mail ID</param>
+        /// <param name="hostFirstName">host First Name</param>
+        /// <param name="strVisitorName">visitor name</param>
+        /// <param name="strCompany">company name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strCity">city name</param>
+        /// <param name="strVisitorType">visitor type</param>
+        /// <param name="serverPath">server path</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request ID</param>
+        /// <param name="strLink">link value</param>
+        /// <param name="daysSelected">days Selected</param>
+        /// <param name="selection">selection value</param>
+        /// <param name="selectionPattern">Selection Pattern</param>
+        /// <param name="facilityAddress">facility Address</param>
+        /// <param name="addressToken">address Token</param>
+        /// <returns>Returns a value</returns>
+        public string SendCheckinToHostRecc(
+            string hostID,
+            string hostMailID,
+            string hostFirstName,
+            string strVisitorName,
+            string strCompany,
+            string strFacility,
+            string strCity,
+            string strVisitorType,
+            string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string strLink,
+            string daysSelected,
+            string selection,
+            string selectionPattern,
+            string facilityAddress,
+            string addressToken)
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = hostID.Trim();
+            templateParameters.HostMailID = hostMailID.Trim();
+            templateParameters.HostFirstName = hostFirstName.Trim();
+            templateParameters.VisitorName = strVisitorName.Trim();
+            templateParameters.Company = strCompany.Trim();
+            templateParameters.Link = strLink.Trim();
+            templateParameters.FromDate = strFromDate.Trim();
+            templateParameters.ToDate = strToDate.Trim();
+            templateParameters.City = strCity.Trim();
+            templateParameters.VisitorType = strVisitorType.Trim();
+            templateParameters.Facility = strFacility.Trim();
+            templateParameters.DaysSelected = daysSelected.Trim();
+            templateParameters.Selection = selection.Trim();
+            templateParameters.SelectionPattern = selectionPattern.Trim();
+
+            templateParameters.FacilityAddress = ": " + facilityAddress.Trim();
+            templateParameters.AddressToken = addressToken.Trim();
+            templateParameters.ServerPath = serverPath;
+
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            oneCommunicatorTransactionParameters.Process = "1CVisitorRequestReccurancePattern";
+            ////VMSConstants.VMSConstants.VisitorRequestForReccPattern;
+
+            // oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+            /////SMS sms = new SMS();
+
+            // sms.TransactionParameters = transactioParameters;
+            ////sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry for " +
+            ////    strVisitorName + " has been submitted successfully.Express CheckIn code:" +
+            ////    requestID + ".Regards,Physical Security.";
+
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            ////channelParameters.SMS = sms;
+
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(xmlDocument.ToString(), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Check in To Host
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostMailID">host Mail ID</param>
+        /// <param name="hostFirstName">host First Name</param>
+        /// <param name="strVisitorName">visitor name</param>
+        /// <param name="strCompany">company name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strCity">city name</param>
+        /// <param name="strVisitorType">visitor type</param>
+        /// <param name="serverPath">server path</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request id</param>
+        /// <param name="strLink">link value</param>
+        /// <param name="daysSelected">days Selected</param>
+        /// <param name="selection">selection value</param>
+        /// <param name="selectionPattern">selection Pattern</param>
+        /// <returns>Returns a value</returns>
+        public string SendCheckinToHostRecc(
+            string hostID,
+            string hostMailID,
+            string hostFirstName,
+            string strVisitorName,
+            string strCompany,
+            string strFacility,
+            string strCity,
+            string strVisitorType,
+            string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string strLink,
+            string daysSelected,
+            string selection,
+            string selectionPattern)
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters_scithr = new TemplateParameters();
+            templateParameters_scithr.HostID = hostID.Trim();
+            templateParameters_scithr.HostMailID = hostMailID.Trim();
+            templateParameters_scithr.HostFirstName = hostFirstName.Trim();
+            templateParameters_scithr.VisitorName = strVisitorName.Trim();
+            templateParameters_scithr.Company = strCompany.Trim();
+            templateParameters_scithr.Link = strLink.Trim();
+            templateParameters_scithr.FromDate = strFromDate.Trim();
+            templateParameters_scithr.ToDate = strToDate.Trim();
+            templateParameters_scithr.City = strCity.Trim();
+            templateParameters_scithr.VisitorType = strVisitorType.Trim();
+            templateParameters_scithr.Facility = strFacility.Trim();
+            templateParameters_scithr.DaysSelected = daysSelected.Trim();
+            templateParameters_scithr.Selection = selection.Trim();
+            templateParameters_scithr.SelectionPattern = selectionPattern.Trim();
+            templateParameters_scithr.ServerPath = serverPath;
+
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            oneCommunicatorTransactionParameters.Process = "1CVisitorRequestReccurancePattern";
+            ////VMSConstants.VMSConstants.VisitorRequestForReccPattern;
+
+            // oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+
+            Email email = new Email();
+            email.TemplateParameters = templateParameters_scithr;
+            SMS sms = new SMS();
+
+            // sms.TransactionParameters = transactioParameters;
+            sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry for " +
+                strVisitorName + " has been submitted successfully.Express CheckIn code:" +
+                requestID + ".Regards,Physical Security.";
+
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            channelParameters.SMS = sms;
+
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(xmlDocument.ToString(), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Check in To Host
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostMailID">host Mail ID</param>
+        /// <param name="hostFirstName">host First Name</param>
+        /// <param name="strVisitorName">visitor name</param>
+        /// <param name="strCompany">company name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strCity">city name</param>
+        /// <param name="strVisitorType">visitor type</param>
+        /// <param name="serverPath">Server Path</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request ID</param>
+        /// <param name="strLink">link value</param>
+        /// <param name="facilityAddress">facility Address</param>
+        /// <param name="addressToken">address Token</param>
+        /// <param name="mobileNo">Mobile No</param>
+        /// <returns>Returns a value</returns>
+        public string SendCheckinToHost(
+            string hostID,
+            string hostMailID,
+            string hostFirstName,
+            string visitors,
+            //string strVisitorName,
+            //string strCompany,
+            string strFacility,
+            string strCity,
+            string strVisitorType,
+            string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string strLink,
+            string facilityAddress,
+            string addressToken,
+            //string mobileNo,
+            string summary, string summaryJSON, string contentJSON, string templateID, string content, string title)
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = hostID.Trim();
+            templateParameters.HostMailID = hostMailID.Trim();
+            templateParameters.HostFirstName = hostFirstName.Trim();
+            templateParameters.VisitorName = string.Empty;
+            templateParameters.Company = string.Empty;
+            templateParameters.Link = strLink.Trim();
+            templateParameters.FromDate = strFromDate.Trim();
+            templateParameters.ToDate = strToDate.Trim();
+            templateParameters.City = strCity.Trim();
+            templateParameters.VisitorType = strVisitorType.Trim();
+            templateParameters.Facility = strFacility.Trim();
+            //templateParameters.FacilityAddress = ": " + facilityAddress.Trim();
+            templateParameters.FacilityAddress = "Cognizant Technology Solutions";
+            templateParameters.AddressToken = addressToken.Trim();
+            templateParameters.ServerPath = serverPath;
+            templateParameters.MobileNo = string.Empty;
+            templateParameters.Visitors = visitors;
+
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            oneCommunicatorTransactionParameters.Process = "1CVisitorRequestSubmitProcess";
+            ////VMSConstants.VMSConstants.VisitorRequestSubmit; // "1CVisitorRequestSubmitProcess";
+
+            //// oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            // Mobile info cards 
+            Mobile mobile = new Mobile();
+            mobile.Summary = summary;
+            mobile.SummaryJSON = summaryJSON;
+            mobile.TemplateID = templateID;
+            mobile.Content = content;
+            mobile.ContentJSON = contentJSON;
+            mobile.Title = title;
+            //End Changes mobile
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+            //SMS sms = new SMS();
+
+            //// sms.TransactionParameters = transactioParameters;
+            //sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry has been submitted successfully.Express CheckIn code:" +
+            //    requestID + ".Regards,Physical Security.";
+
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            //channelParameters.SMS = sms;
+            // Mobile info cards 
+            channelParameters.Mobile = mobile;
+            //End Changes mobile
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                //string unifiedID = requestUnifiedVASContractClient.Notify(xmlDocument.ToString(), null);
+                string unifiedID = requestUnifiedVASContractClient.Notify(HttpUtility.HtmlDecode(xmlDocument.ToString()), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Check in To Host Interview Candidates
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostMailID">host Mail ID</param>
+        /// <param name="hostFirstName">host First Name</param>
+        /// <param name="strVisitorName">visitor name</param>
+        /// <param name="strCompany">company name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strCity">city name</param>
+        /// <param name="strVisitorType">visitor type</param>
+        /// <param name="serverPath">server path</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request id</param>
+        /// <param name="strLink">link name</param>
+        /// <param name="facilityAddress">facility address</param>
+        /// <param name="addressToken">address Token</param>
+        /// <returns>Returns a value</returns>
+        public string SendCheckinToHostInterviewCandidates(
+            string hostID,
+            string hostMailID,
+            string hostFirstName,
+            string strVisitorName,
+            string strCompany,
+            string strFacility,
+            string strCity,
+            string strVisitorType,
+            string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string strLink,
+            string facilityAddress,
+            string addressToken,
+             string summary, string summaryJSON, string contentJSON, string templateID, string content, string title)
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = hostID.Trim();
+            templateParameters.HostMailID = hostMailID.Trim();
+            templateParameters.HostFirstName = hostFirstName.Trim();
+            templateParameters.VisitorName = strVisitorName.Trim();
+            templateParameters.Company = strCompany.Trim();
+            templateParameters.Link = strLink.Trim();
+            //templateParameters.FromDate = strFromDate.Trim();
+            templateParameters.ToDate = strToDate.Trim();
+            templateParameters.City = strCity.Trim();
+            templateParameters.VisitorType = strVisitorType.Trim();
+            templateParameters.Facility = strFacility.Trim();
+            templateParameters.ServerPath = serverPath;
+            templateParameters.AddressToken = addressToken;
+            templateParameters.FacilityAddress = facilityAddress;
+            templateParameters.Visitors = strFromDate;
+            // templateParameters.Subject = VMSConstants.VMSConstants.VisitorRequestSubject;
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+                ////System.Configuration.ConfigurationManager.AppSettings["appId"]; // "116";
+            oneCommunicatorTransactionParameters.Process = "1CVisitorRequestSubmitProcessInterviewCandidates";
+            ////VMSConstants.VMSConstants.VisitorRequestForInterviewCandidates; // "1CVisitorRequestSubmitProcess";
+
+            // oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+            SMS sms = new SMS();
+            //Mobile card changes
+            Mobile mobile = new Mobile();
+            
+            // sms.TransactionParameters = transactioParameters;
+            sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry for " +
+                strVisitorName + " visitors has been submitted successfully.Regards,Physical Security.";
+
+            //Mobile Changes           
+            mobile.Summary = summary;
+            mobile.SummaryJSON = summaryJSON;
+            mobile.ContentJSON = contentJSON;
+            mobile.TemplateID = templateID;
+            mobile.Content = content;
+            mobile.Title = title;
+            mobile.DueDate = string.Empty;
+            //End Mobile changes
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            channelParameters.SMS = sms;
+            //Mobile card changes
+            channelParameters.Mobile = mobile;
+            //End Mobile changes
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                //string unifiedID = requestUnifiedVASContractClient.Notify(xmlDocument.ToString(), null);
+                string unifiedID = requestUnifiedVASContractClient.Notify(HttpUtility.HtmlDecode(xmlDocument.ToString()), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+
+                streamApproval.Close();
+            }
+
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Check in To Host Interview Candidates
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostMailID">host Mail ID</param>
+        /// <param name="hostFirstName">host First Name</param>
+        /// <param name="strVisitorName">Visitor Name</param>
+        /// <param name="strCompany">company name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strCity">city name</param>
+        /// <param name="strVisitorType">visitor type</param>
+        /// <param name="serverPath">server path</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request id</param>
+        /// <param name="strLink">link value</param>
+        /// <returns>Returns a value</returns>
+        public string SendCheckinToHostInterviewCandidates(
+            string hostID,
+            string hostMailID,
+            string hostFirstName,
+            string strVisitorName,
+            string strCompany,
+            string strFacility,
+            string strCity,
+            string strVisitorType,
+            string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string strLink,
+            string summary, string summaryJSON, string contentJSON, string templateID, string content, string title)
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters_scithic = new TemplateParameters();
+            templateParameters_scithic.HostID = hostID.Trim();
+            templateParameters_scithic.HostMailID = hostMailID.Trim();
+            templateParameters_scithic.HostFirstName = hostFirstName.Trim();
+            templateParameters_scithic.VisitorName = strVisitorName.Trim();
+            templateParameters_scithic.Company = strCompany.Trim();
+            templateParameters_scithic.Link = strLink.Trim();
+            templateParameters_scithic.FromDate = strFromDate.Trim();
+            templateParameters_scithic.ToDate = strToDate.Trim();
+            templateParameters_scithic.City = strCity.Trim();
+            templateParameters_scithic.VisitorType = strVisitorType.Trim();
+            templateParameters_scithic.Facility = strFacility.Trim();
+            templateParameters_scithic.ServerPath = serverPath;
+            templateParameters_scithic.Visitors = strFromDate;
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            ////System.Configuration.ConfigurationManager.AppSettings["appId"]; // "116";
+            oneCommunicatorTransactionParameters.Process = "1CVisitorRequestSubmitProcessInterviewCandidates";
+            ////VMSConstants.VMSConstants.VisitorRequestForInterviewCandidates; // "1CVisitorRequestSubmitProcess";
+
+            // oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            Email email = new Email();
+            email.TemplateParameters = templateParameters_scithic;
+            SMS sms = new SMS();
+
+            // sms.TransactionParameters = transactioParameters;
+            sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry for " +
+                strVisitorName + " visitors has been submitted successfully.Regards,Physical Security.";
+            //Mobile Changes
+            Mobile mobile = new Mobile();
+            mobile.Summary = summary;
+            mobile.SummaryJSON = summaryJSON;
+            mobile.ContentJSON = contentJSON;
+            mobile.TemplateID = templateID;
+            mobile.Content = content;
+            mobile.Title = title;
+            mobile.DueDate = string.Empty;
+            //End Mobile changes
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            channelParameters.SMS = sms;
+            //Mobile Changes
+            channelParameters.Mobile = mobile;
+            //End Mobile changes
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                //string unifiedID = requestUnifiedVASContractClient.Notify(xmlDocument.ToString(), null);
+                string unifiedID = requestUnifiedVASContractClient.Notify(HttpUtility.HtmlDecode(xmlDocument.ToString()), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+
+                streamApproval.Close();
+            }
+
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Check in To Host InterView Candidates
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostMailID">host Mail ID</param>
+        /// <param name="hostFirstName">Host First Name</param>
+        /// <param name="strVisitorName">visitor name</param>
+        /// <param name="strCompany">company name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strCity">city name</param>
+        /// <param name="strVisitorType">visitor type</param>
+        /// <param name="serverPath">server path</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request ID</param>
+        /// <param name="strLink">link value</param>
+        /// <param name="daysSelected">days Selected</param>
+        /// <param name="selection">selection value</param>
+        /// <param name="selectionPattern">selection Pattern</param>
+        /// <param name="facilityAddress">facility Address</param>
+        /// <param name="addressToken">address Token</param>
+        /// <returns>Returns a value</returns>
+        public string SendCheckinToHostReccInterViewCandidates(
+            string hostID,
+            string hostMailID,
+            string hostFirstName,
+            string strVisitorName,
+            string strCompany,
+            string strFacility,
+            string strCity,
+            string strVisitorType,
+            string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string strLink,
+            string daysSelected,
+            string selection,
+            string selectionPattern,
+            string facilityAddress,
+            string addressToken
+            )
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = hostID.Trim();
+            templateParameters.HostMailID = hostMailID.Trim();
+            templateParameters.HostFirstName = hostFirstName.Trim();
+            templateParameters.VisitorName = strVisitorName.Trim();
+            templateParameters.Company = strCompany.Trim();
+            templateParameters.Link = strLink.Trim();
+            templateParameters.FromDate = strFromDate.Trim();
+            templateParameters.ToDate = strToDate.Trim();
+            templateParameters.City = strCity.Trim();
+            templateParameters.VisitorType = strVisitorType.Trim();
+            templateParameters.Facility = strFacility.Trim();
+            templateParameters.DaysSelected = daysSelected.Trim();
+            templateParameters.Selection = selection.Trim();
+            templateParameters.SelectionPattern = selectionPattern.Trim();
+            templateParameters.FacilityAddress = ":" + facilityAddress.Trim();
+            templateParameters.AddressToken = addressToken.Trim();
+            templateParameters.ServerPath = serverPath;
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            ////System.Configuration.ConfigurationManager.AppSettings["appId"]; // "116";
+            oneCommunicatorTransactionParameters.Process = "1CVisitorRequestReccurancePatternInterviewCandidat";
+            ////VMSConstants.VMSConstants.VisitorRequestForReccPatternInterviewCandidates;
+
+            //// oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            ////oneCommunicatorTransactionParameters.RequestId = "002";
+
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+            SMS sms = new SMS();
+            sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry for " +
+                strVisitorName + "visitors  has been submitted successfully.Regards,Physical Security.";
+
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            channelParameters.SMS = sms;
+
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(xmlDocument.ToString(), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Check in To Host InterView Candidates
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostMailID">host Mail ID</param>
+        /// <param name="hostFirstName">host First Name</param>
+        /// <param name="strVisitorName">visitor name</param>
+        /// <param name="strCompany">company name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strCity">city name</param>
+        /// <param name="strVisitorType">visitor type</param>
+        /// <param name="serverPath">server path</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request ID</param>
+        /// <param name="strLink">link value</param>
+        /// <param name="daysSelected">days Selected</param>
+        /// <param name="selection">selection value</param>
+        /// <param name="selectionPattern">selection Pattern</param>
+        /// <returns>Returns a value</returns>
+        public string SendCheckinToHostReccInterViewCandidates(
+            string hostID,
+            string hostMailID,
+            string hostFirstName,
+            string strVisitorName,
+            string strCompany,
+            string strFacility,
+            string strCity,
+            string strVisitorType,
+            string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string strLink,
+            string daysSelected,
+            string selection,
+            string selectionPattern
+            )
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters_scithric = new TemplateParameters();
+            templateParameters_scithric.HostID = hostID.Trim();
+            templateParameters_scithric.HostMailID = hostMailID.Trim();
+            templateParameters_scithric.HostFirstName = hostFirstName.Trim();
+            templateParameters_scithric.VisitorName = strVisitorName.Trim();
+            templateParameters_scithric.Company = strCompany.Trim();
+            templateParameters_scithric.Link = strLink.Trim();
+            templateParameters_scithric.FromDate = strFromDate.Trim();
+            templateParameters_scithric.ToDate = strToDate.Trim();
+            templateParameters_scithric.City = strCity.Trim();
+            templateParameters_scithric.VisitorType = strVisitorType.Trim();
+            templateParameters_scithric.Facility = strFacility.Trim();
+            templateParameters_scithric.DaysSelected = daysSelected.Trim();
+            templateParameters_scithric.Selection = selection.Trim();
+            templateParameters_scithric.SelectionPattern = selectionPattern.Trim();
+            templateParameters_scithric.ServerPath = serverPath;
+
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            ////System.Configuration.ConfigurationManager.AppSettings["appId"]; // "116";
+            oneCommunicatorTransactionParameters.Process = "1CVisitorRequestReccurancePatternInterviewCandidat";
+            ////VMSConstants.VMSConstants.VisitorRequestForReccPatternInterviewCandidates;
+
+            // oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            Email email = new Email();
+            email.TemplateParameters = templateParameters_scithric;
+            SMS sms = new SMS();
+
+            // sms.TransactionParameters = transactioParameters;
+            sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry for " +
+                strVisitorName + " visitors has been submitted successfully.Regards,Physical Security.";
+
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            channelParameters.SMS = sms;
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(xmlDocument.ToString(), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Check in To Host
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostFirstName">host First Name</param>
+        /// <param name="visitors">visitor name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request ID</param>
+        /// <param name="strCity">string city</param>
+        /// <returns>Returns a value</returns>
+        public string SendSubmittionOTPToHost(
+            string hostID,
+            ////string hostMailID,
+            string hostFirstName,
+            string visitors,
+            ////string strVisitorName,
+            ////string strCompany,
+            string strFacility,
+            ////string strVisitorType,
+            ////string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+                        string strCity,
+                        string summary, string summaryJSON, string contentJSON, string templateID, string content, string title)
+        ////string strLink
+            {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = hostID;
+            templateParameters.HostMailID = string.Empty;
+            templateParameters.HostFirstName = hostFirstName.Trim();
+            templateParameters.VisitorName = string.Empty;
+            templateParameters.Company = string.Empty;
+            templateParameters.Link = string.Empty;
+            templateParameters.FromDate = strFromDate.Trim();
+            templateParameters.ToDate = strToDate.Trim();
+            templateParameters.City = strCity;
+            templateParameters.VisitorType = string.Empty;
+            templateParameters.Facility = strFacility.Trim();
+            templateParameters.ServerPath = string.Empty;
+            templateParameters.Visitors = visitors;
+            string strclients = "the client(s)";
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            oneCommunicatorTransactionParameters.Process = "VMSSubmitNotificatiotoHost";
+            ////VMSConstants.VMSConstants.VisitorRequestSubmit; // "1CVisitorRequestSubmitProcess";
+            //// oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+
+            SMS sms = new SMS();
+            //// sms.TransactionParameters = transactioParameters;
+            sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry for " +
+                strclients + " has been submitted successfully.Express CheckIn code:" +
+                requestID + ".Regards,Physical Security.";
+            Mobile mobile = new Mobile();
+            mobile.Summary = summary;
+            mobile.SummaryJSON = summaryJSON;
+            mobile.ContentJSON = contentJSON;
+            mobile.TemplateID = templateID;
+            mobile.Content = content;
+            mobile.Title = title;
+            mobile.DueDate = string.Empty;
+
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            channelParameters.SMS = sms;
+            channelParameters.Mobile = mobile;
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(HttpUtility.HtmlDecode(xmlDocument.ToString()), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Check in To Host
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostFirstName">host First Name</param>
+        /// <param name="visitors">visitor name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request ID</param>
+        /// <param name="requestor">link value</param>
+        /// <param name="strCity">string city</param>
+        /// <returns>Returns a value</returns>
+        public string SendOnlyOTPToHost(
+            string hostID,
+            ////string hostMailID,
+            string hostFirstName,
+            string visitors,
+            ////string strVisitorName,
+            ////string strCompany,
+            string strFacility,
+            ////string strVisitorType,
+            ////string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string requestor,
+            string strCity,
+           string summary, string summaryJSON, string contentJSON, string templateID, string content, string title)
+        ////string strLink
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = hostID;
+            templateParameters.HostMailID = string.Empty;
+            templateParameters.HostFirstName = hostFirstName.Trim();
+            templateParameters.VisitorName = string.Empty;
+            templateParameters.Company = string.Empty;
+            templateParameters.Link = string.Empty;
+            templateParameters.FromDate = strFromDate.Trim();
+            templateParameters.ToDate = strToDate.Trim();
+            templateParameters.City = strCity;
+            templateParameters.VisitorType = string.Empty;
+            templateParameters.Facility = strFacility;
+            templateParameters.ServerPath = string.Empty;
+            templateParameters.Visitors = visitors;
+            templateParameters.Requestor = requestor;
+            string strclients = "the client(s)";
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            oneCommunicatorTransactionParameters.Process = "VMSSendOTPtoHost";
+            ////VMSConstants.VMSConstants.VisitorRequestSubmit; // "1CVisitorRequestSubmitProcess";
+            //// oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+
+            SMS sms = new SMS();
+             ////sms.TransactionParameters = transactioParameters;
+            sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry for " +
+                strclients + " has been submitted successfully.Express CheckIn code:" +
+                requestID + ".Regards,Physical Security.";
+
+            Mobile mobile = new Mobile();
+            ////mobile.Summary = "Checking mobile card";
+            ////mobile.SummaryJSON = "{\"Visitor Name \":{\"value\":\"" + "Ramkumar" + "\"},\"Request ID\":{\"value\":\"" + requestID + "\"},\"Meeting Schedule\":{\"value\":\"" + strFromDate + "to" + strToDate + "\",\"icon\":\"\\uD83D\\uDCC5\"}}";
+            ////mobile.ContentJSON = "[{\"Visitor Name \":{\"value\":\"" + "Ramkumar" + "\"},\"Request ID\":{\"value\":\"" + requestID + "\"},\"Meeting Schedule\":{\"value\":\"" + strFromDate + "to" + strToDate + "\",\"icon\":\"\\uD83D\\uDCC5\"}}]";
+            ////mobile.TemplateID = "3";
+            ////mobile.Content = "Checking mobile card";
+            ////mobile.Title = "Checking mobile card";
+            ////mobile.DueDate = string.Empty;
+
+            mobile.Summary = summary;
+            mobile.SummaryJSON = summaryJSON;
+            mobile.ContentJSON = contentJSON;
+            mobile.TemplateID = templateID;
+            mobile.Content = content;
+            mobile.Title = title;
+            mobile.DueDate = string.Empty;
+
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            channelParameters.SMS = sms;
+            channelParameters.Mobile = mobile;
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(HttpUtility.HtmlDecode(xmlDocument.ToString()), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Mail to Security head
+        /// </summary>
+        /// <param name="securityID">security ID</param>
+        /// <param name="securityName">security Name</param>
+        /// <param name="visitors">visitor name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request ID</param>
+        /// <param name="hostidname">host id name</param>
+        /// <returns>Returns a value</returns>
+        public string SendMailtoSecurityHead(
+            string securityID,
+            ////string hostMailID,
+            string securityName,
+            string visitors,
+            ////string strVisitorName,
+            ////string strCompany,
+            string strFacility,
+            ////string strCity,
+            ////string strVisitorType,
+            ////string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string hostidname)
+        ////string strLink
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = securityID;
+            templateParameters.HostMailID = string.Empty;
+            templateParameters.HostFirstName = securityName.Trim();
+            templateParameters.VisitorName = string.Empty;
+            templateParameters.Company = hostidname;
+            templateParameters.Link = string.Empty;
+            templateParameters.FromDate = strFromDate.Trim();
+            templateParameters.ToDate = strToDate.Trim();
+            templateParameters.City = string.Empty;
+            templateParameters.VisitorType = string.Empty;
+            templateParameters.Facility = strFacility.Trim();
+            templateParameters.ServerPath = string.Empty;
+            templateParameters.Visitors = visitors;
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            oneCommunicatorTransactionParameters.Process = "VMSNotifySecurityHead";
+            ////VMSConstants.VMSConstants.VisitorRequestSubmit; // "1CVisitorRequestSubmitProcess";
+            //// oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = securityID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+
+            ////SMS sms = new SMS();
+            //////// sms.TransactionParameters = transactioParameters;
+            ////sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry has been submitted successfully.Express CheckIn code:" +
+            ////    requestID + ".Regards,Physical Security.";
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            ////channelParameters.SMS = sms;
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(HttpUtility.HtmlDecode(xmlDocument.ToString()), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Mail to Security head
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostName">host Name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="requestID">request ID</param>
+        /// <returns>Returns a value</returns>
+        public string SendRemainderMailToCollectPass(
+            string hostID,
+            ////string hostMailID,
+            string hostName,
+            ////string visitors,
+            ////string strVisitorName,
+            ////string strCompany,
+            string strFacility,
+            ////string strCity,
+            ////string strVisitorType,
+            ////string serverPath,
+            /////string strFromDate,
+            //////string strToDate,
+            string requestID)
+        ////string strLink
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = hostID;
+            templateParameters.HostMailID = string.Empty;
+            templateParameters.HostFirstName = hostName.Trim();
+            templateParameters.VisitorName = string.Empty;
+            templateParameters.Company = string.Empty;
+            templateParameters.Link = string.Empty;
+            templateParameters.FromDate = string.Empty;
+            templateParameters.ToDate = string.Empty;
+            templateParameters.City = string.Empty;
+            templateParameters.VisitorType = string.Empty;
+            templateParameters.Facility = strFacility.Trim();
+            templateParameters.ServerPath = string.Empty;
+            templateParameters.Visitors = string.Empty;
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "1496";
+            oneCommunicatorTransactionParameters.Process = "PSRemaindertoCollectPass";
+            ////VMSConstants.VMSConstants.VisitorRequestSubmit; // "1CVisitorRequestSubmitProcess";
+            //// oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+
+            ////SMS sms = new SMS();
+            //////// sms.TransactionParameters = transactioParameters;
+            ////sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry has been submitted successfully.Express CheckIn code:" +
+            ////    requestID + ".Regards,Physical Security.";
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            ////channelParameters.SMS = sms;
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(HttpUtility.HtmlDecode(xmlDocument.ToString()), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Mail to Security head
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostName">host Name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="requestID">request ID</param>
+        /// <param name="strToDate">to date</param>
+        /// <returns>Returns a value</returns>
+        public string SendRemainderMailToReturnPass(
+            string hostID,
+            ////string hostMailID,
+            string hostName,
+            ////string visitors,
+            ////string strVisitorName,
+            ////string strCompany,
+            string strFacility,
+            ////string strCity,
+            ////string strVisitorType,
+            ////string serverPath,
+            /////string strFromDate,
+            //////string strToDate,
+            string requestID,
+            string strToDate)
+        ////string strLink
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = hostID;
+            templateParameters.HostMailID = string.Empty;
+            templateParameters.HostFirstName = hostName.Trim();
+            templateParameters.VisitorName = string.Empty;
+            templateParameters.Company = string.Empty;
+            templateParameters.Link = string.Empty;
+            templateParameters.FromDate = string.Empty;
+            templateParameters.ToDate = strToDate;
+            templateParameters.City = string.Empty;
+            templateParameters.VisitorType = string.Empty;
+            templateParameters.Facility = strFacility.Trim();
+            templateParameters.ServerPath = string.Empty;
+            templateParameters.Visitors = string.Empty;
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "1496";
+            oneCommunicatorTransactionParameters.Process = "PSRemaindertoReturnPass";
+            ////VMSConstants.VMSConstants.VisitorRequestSubmit; // "1CVisitorRequestSubmitProcess";
+            //// oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+
+            ////SMS sms = new SMS();
+            //////// sms.TransactionParameters = transactioParameters;
+            ////sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry has been submitted successfully.Express CheckIn code:" +
+            ////    requestID + ".Regards,Physical Security.";
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            ////channelParameters.SMS = sms;
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(HttpUtility.HtmlDecode(xmlDocument.ToString()), null);
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+
+        /// <summary>
+        /// Send Check in To Host
+        /// </summary>
+        /// <param name="hostID">host ID</param>
+        /// <param name="hostFirstName">host First Name</param>
+        /// <param name="visitors">visitor name</param>
+        /// <param name="strFacility">facility name</param>
+        /// <param name="strFromDate">from date</param>
+        /// <param name="strToDate">to date</param>
+        /// <param name="requestID">request ID</param>
+        /// <returns>Returns a value</returns>
+        public string SendSubmitNotifyToRequestor(
+            string hostID,
+            ////string hostMailID,
+            string hostFirstName,
+            string visitors,
+            ////string strVisitorName,
+            ////string strCompany,
+            string strFacility,
+            ////string strCity,
+            ////string strVisitorType,
+            ////string serverPath,
+            string strFromDate,
+            string strToDate,
+            string requestID,
+            string summary, string summaryJSON, string contentJSON, string templateID, string content, string title)
+        ////string strLink
+        {
+            string mailSendStatus = string.Empty;
+            TemplateParameters templateParameters = new TemplateParameters();
+            templateParameters.HostID = hostID;
+            templateParameters.HostMailID = string.Empty;
+            templateParameters.HostFirstName = hostFirstName.Trim();
+            templateParameters.VisitorName = string.Empty;
+            templateParameters.Company = string.Empty;
+            templateParameters.Link = string.Empty;
+            templateParameters.FromDate = strFromDate.Trim();
+            templateParameters.ToDate = strToDate.Trim();
+            templateParameters.City = string.Empty;
+            templateParameters.VisitorType = string.Empty;
+            templateParameters.Facility = strFacility.Trim();
+            templateParameters.ServerPath = string.Empty;
+            templateParameters.Visitors = visitors;
+            templateParameters.Requestor = string.Empty;
+            OneCommunicatorTransactionParameters oneCommunicatorTransactionParameters =
+                new OneCommunicatorTransactionParameters();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";
+            oneCommunicatorTransactionParameters.Process = "VMSSubmitNotificatiotoRequestor";
+            ////VMSConstants.VMSConstants.VisitorRequestSubmit; // "1CVisitorRequestSubmitProcess";
+            //// oneCommunicatorTransactionParameters.Process = "RICS";
+            oneCommunicatorTransactionParameters.Recipients = hostID;
+            oneCommunicatorTransactionParameters.RequestId = requestID.Trim();
+            Email email = new Email();
+            email.TemplateParameters = templateParameters;
+
+            ////SMS sms = new SMS();
+            //////// sms.TransactionParameters = transactioParameters;
+            ////sms.ShortMessage = "Hi " + hostFirstName + ",your visitor entry has been submitted successfully.Express CheckIn code:" +
+            ////    requestID + ".Regards,Physical Security.";
+
+            Mobile mobile = new Mobile();
+            mobile.Summary = summary;
+            mobile.SummaryJSON = summaryJSON;
+            mobile.ContentJSON = contentJSON;
+            mobile.TemplateID = templateID;
+            mobile.Content = content;
+            mobile.Title = title;
+            mobile.DueDate = string.Empty;
+
+            ChannelParameters channelParameters = new ChannelParameters();
+            channelParameters.Email = email;
+            ////channelParameters.SMS = sms;
+            channelParameters.Mobile = mobile;
+            OneCommunicator oneCommunicator = new OneCommunicator();
+            oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+            oneCommunicator.ChannelParameters = channelParameters;
+            XDocument xmlDocument = null;
+            RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+            StringBuilder stringBuildEApproval = new StringBuilder();
+            StringWriter streamApproval = new StringWriter(stringBuildEApproval);
+
+            try
+            {
+                XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                xmlSerializerEApproval.Serialize(streamApproval, oneCommunicator);
+                xmlDocument = XDocument.Load(new StringReader(stringBuildEApproval.ToString()));
+
+                requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                string unifiedID = requestUnifiedVASContractClient.Notify(HttpUtility.HtmlDecode(xmlDocument.ToString()), null);
+
+                if (unifiedID != null)
+                {
+                    mailSendStatus = "Mail sent successfully. ";
+                }
+                else
+                {
+                    mailSendStatus = "Mail sending failed. ";
+                }
+            }
+            catch (Exception ex)
+            {
+                mailSendStatus = "Mail sending failed. ";
+                throw ex;
+            }
+            finally
+            {
+                if (requestUnifiedVASContractClient != null &&
+                    requestUnifiedVASContractClient.State != CommunicationState.Closed)
+                {
+                    requestUnifiedVASContractClient.Close();
+                }
+            }
+
+            streamApproval.Close();
+            return mailSendStatus;
+        }
+        /// <summary>
+        /// Function to send mail at the time of checkin
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <param name="indate"></param>
+        /// <param name="strRequestId"></param>
+        /// <param name="strHostID"></param>
+        /// <param name="attachmentData"></param>
+        public void SendMail(string hostName,string indate, string strRequestId, string strHostID, DataTable attachmentData)
+        {
+               TemplateParams templateParameters = new TemplateParams();
+              OneCommunicatorTransactionParams transactionParameters = new OneCommunicatorTransactionParams();
+                templateParameters.InDate = indate.Trim();
+                templateParameters.Subject = "Visitor Arrival";
+                templateParameters.HostName = hostName;
+                transactionParameters.GlobalAppId ="116"; ////"116";
+                transactionParameters.Process = "VMSCheckInProcess"; ////"VMSCheckInProcess";
+                transactionParameters.Recipients = strHostID;
+                transactionParameters.RequestId = strRequestId.Trim();
+                EmailTemplate email = new EmailTemplate();
+                email.TemplateParameters = templateParameters;
+                ChannelParams channelParameters = new ChannelParams();
+                channelParameters.Email = email;
+                MailTemplate.OneCommunicator oneCommunicator = new MailTemplate.OneCommunicator();
+                oneCommunicator.TransactionParameters = transactionParameters;
+                oneCommunicator.ChannelParameters = channelParameters;
+                XDocument xdocument = null;
+                RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+                string returnVal = string.Empty;
+                try
+                {
+                
+                   Utility obj = new Utility();
+                    MessageAttachment[] att = new MessageAttachment[1];
+                    att[0] = new MessageAttachment();
+                    byte[] file = obj.GenerateExcelForVisitorCheckIn(attachmentData, "VMS_Visitors_Checked-in");
+                    att[0].FileName = "VMS_Visitors_Checked-in" + ".xlsx";
+                    att[0].FileContent = file;  //// byte array conversion
+
+
+                    XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                    StringBuilder sbeapproval = new StringBuilder();
+                    StringWriter sweapproval = new StringWriter(sbeapproval);
+                    xmlSerializerEApproval.Serialize(sweapproval, oneCommunicator);
+                    xdocument = XDocument.Load(new StringReader(sbeapproval.ToString()));
+                    sweapproval.Close();
+                    requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                    returnVal = requestUnifiedVASContractClient.Notify(xdocument.ToString(), att);
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            
+        }
+        /// <summary>
+        /// /Function to send mail at the time of checkout
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <param name="facility"></param>
+        /// <param name="strRequestId"></param>
+        /// <param name="strHostID"></param>
+        /// <param name="attachmentData"></param>
+        public void SendMail_Checkout(string hostName,string strRequestId, string strHostID, DataTable attachmentData)
+        {
+
+            TemplateParams templateParameters = new TemplateParams();
+            OneCommunicatorTransactionParams transactionParameters = new OneCommunicatorTransactionParams();
+            ////templateParameters.InDate = outdate.Trim();
+            templateParameters.Subject = "Physical security: Visit completion";
+                OneCommunicatorTransactionParams oneCommunicatorTransactionParameters = new OneCommunicatorTransactionParams();
+            oneCommunicatorTransactionParameters.GlobalAppId = "116";////"116";
+                oneCommunicatorTransactionParameters.Process = "vmscheckout"; 
+                oneCommunicatorTransactionParameters.Recipients = strHostID;
+                templateParameters.HostName = hostName.Trim();
+                oneCommunicatorTransactionParameters.RequestId = strRequestId.Trim();
+                EmailTemplate email = new EmailTemplate();
+                email.TemplateParameters = templateParameters;
+                ChannelParams channelParameters = new ChannelParams();
+                channelParameters.Email = email;
+              MailTemplate.OneCommunicator oneCommunicator = new MailTemplate.OneCommunicator();
+                oneCommunicator.TransactionParameters = oneCommunicatorTransactionParameters;
+                oneCommunicator.ChannelParameters = channelParameters;
+                XDocument xdocument = null;
+                RequestUnifiedVASContractClient requestUnifiedVASContractClient = null;
+                string returnVal = string.Empty;
+               try
+                {
+                Utility obj = new Utility();
+                MessageAttachment[] att = new MessageAttachment[1];
+                    att[0] = new MessageAttachment();
+
+                    byte[] file = obj.GenerateExcelForVisitorCheckIn(
+                 attachmentData, "VMS_Visitors_Checkout");
+                    att[0].FileName = "VMS_Visitors_Checkout" + ".xlsx";
+                    att[0].FileContent = file;  //// byte array conversion
+
+
+                    XmlSerializer xmlSerializerEApproval = new XmlSerializer(oneCommunicator.GetType());
+                    StringBuilder sbeapproval = new StringBuilder();
+                    StringWriter sweapproval = new StringWriter(sbeapproval);
+                    xmlSerializerEApproval.Serialize(sweapproval, oneCommunicator);
+                    xdocument = XDocument.Load(new StringReader(sbeapproval.ToString()));
+                    sweapproval.Close();
+                    requestUnifiedVASContractClient = new RequestUnifiedVASContractClient();
+                    returnVal = requestUnifiedVASContractClient.Notify(xdocument.ToString(), att);
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            
+        }
+    }
+}
