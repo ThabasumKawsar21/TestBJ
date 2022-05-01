@@ -1,0 +1,132 @@
+<?xml version="1.0"?>
+<configuration>
+  <appSettings>
+    <add key="ExchangeURL" value="https://mail.cognizant.com/ews/Exchange.asmx?wsdl" />
+    <add key="ExchangeDomain" value="CTS" />
+    <add key="ExternalEmailBoxUserName" value="CVisitorManagement" />
+    <add key="ExternalEmailBoxPassword" value="V111111#" />
+    <add key="ExternalEmailBoxAddress" value="CVisitorManagement@cognizant.com" />
+    <add key="ReadReceiptDeleteDuration" value="-30" />
+    <add key="MailsToFetch" value="1" />
+    <add key="ReadFromFolder" value="Inbox|Calendar" />
+    <add key="ExpiryDaysForSavedRequest" value="3" />
+    <add key="OneCLink" value="https://onecsitapps.cognizant.com/VMS/" />
+    <add key="MailBoxUserID" value="CVisitorManagement" />
+    <add key="MailBoxUservalue" value="V111111#" />
+    <add key="DomainName" value="cts" />
+    <add key="ExchangeServerURL" value="https://mail.cognizant.com/ews/exchange.asmx" />
+    <add key="SENDLINK" value="http://vmsuat/VMSEnterInformationbyVisitor.aspx?RequestID=" />
+    <add key="SENDLINKTOVISITOR" value="https://vmsuat/MyImageUpdate.aspx?RequestID=" />
+    <add key="SendLinkToVisitorEnable" value="Y" />
+  <!--<add key="ReminderMailtemplate" value="~/MailTemplates/IVSReminderMail.htm"/>-->   
+    <add key="CheckInVisitor" value="CheckInVisitor.htm"/>
+    <add key="CheckInVisitorWithoutLink" value="CheckInVisitorWithoutLink.htm"/>
+    <add key="CodeValue" value="PhysicalSecurityIVS"/>
+    <add key="outlookmailsend" value="N"/>
+    <add key="VcardMails" value="Y"/>
+  
+  </appSettings>
+  <connectionStrings>
+    <add name="VMSConnectionString" connectionString="Data Source=ctsazsimidgntm1.inso13dfbbbfa2150.database.windows.net;Initial Catalog=OneC_VMS;Persist Security Info=True;User ID=OneC_VMS;Password=S111111#;Connection Timeout=90" providerName="System.Data.SqlClient"/>
+    <!--<add name="VMSConnectionString" connectionString="Data Source=ctsazsimisgntm1.inso13dfbbbfa2150.database.windows.net;Initial Catalog=OneC_VMS;Persist Security Info=True;User ID=OneC_VMS;Password=VMS_S111111#;Connection Timeout=90" providerName="System.Data.SqlClient"/>-->
+    <!--<add name="VMSConnectionString" connectionString="Data Source=CTSC00969373301;Initial Catalog=OneC_VMS;Persist Security Info=True;User ID=OneC_VMS;Password=VMS_S111111#" />-->
+    <!--<add name="VMSConnectionString" connectionString="Data Source=CTSINAZCHNSL01;Initial Catalog=OneC_VMS;Persist Security Info=True;User ID=OneC_VMS;Password=VMS_S111111#;Connection Timeout=90" providerName="System.Data.SqlClient"/>-->
+
+  </connectionStrings>
+
+
+  <system.serviceModel>
+    <bindings>
+      <basicHttpBinding>
+        <binding name="BasicHttpMtomBinding" messageEncoding="Mtom" />
+        <binding name="BasicHttpBinding_IService1" />
+        <binding name="BasicHttpsBinding_IService1">
+          <security mode="Transport" />
+        </binding>
+      </basicHttpBinding>
+      <netTcpBinding>
+        <binding name="NetTcpBinding" transferMode="Streamed">
+          <security mode="None" />
+        </binding>
+      </netTcpBinding>
+      <wsHttpBinding>
+        <binding name="WSHttpBinding_IRequestUnifiedVASContract">
+          <security mode="None"/>
+        </binding>
+        <!--<binding name="WSHttpBinding_ILogging">
+          <security mode="None"/>
+        </binding>-->
+
+        <binding name="WSHttpBinding_ILogging" closeTimeout="00:01:00"
+         openTimeout="00:01:00" receiveTimeout="00:10:00" sendTimeout="00:01:00"
+         bypassProxyOnLocal="false" transactionFlow="false" hostNameComparisonMode="StrongWildcard"
+         maxBufferPoolSize="2147483647" maxReceivedMessageSize="2147483647"
+         messageEncoding="Text" textEncoding="utf-8" useDefaultWebProxy="true"
+         allowCookies="false">
+          <readerQuotas maxDepth="32" maxStringContentLength="2147483647"
+            maxArrayLength="2147483647" maxBytesPerRead="2147483647" maxNameTableCharCount="2147483647" />
+          <reliableSession ordered="true" inactivityTimeout="00:10:00"
+            enabled="false" />
+          <security mode="None">
+            <transport clientCredentialType="Windows" proxyCredentialType="None"
+              realm="" />
+            <message clientCredentialType="Windows" negotiateServiceCredential="true" />
+          </security>
+        </binding>
+      </wsHttpBinding>
+    </bindings>
+    <client>
+      <endpoint address="http://onecuatcoresrvs.cognizant.com/Messaging/OneCommunicator/Notification/VAS.svc" binding="wsHttpBinding" bindingConfiguration="WSHttpBinding_IRequestUnifiedVASContract" contract="OneCommunicatorServiceClient.IRequestUnifiedVASContract" name="WSHttpBinding_IRequestUnifiedVASContract">
+        <identity>
+          <dns value="localhost"/>
+        </identity>
+      </endpoint>
+      <!--<endpoint address="http://onecsitcoresrvs.cognizant.com/ExceptionLogging/Logging.svc" binding="wsHttpBinding" bindingConfiguration="WSHttpBinding_ILogging" contract="OneCException.ILogging" name="WSHttpBinding_ILogging">-->
+       
+      <!--<endpoint address="http://onecsitcoresrvs.cognizant.com/255/Logging.svc"
+        binding="wsHttpBinding" bindingConfiguration="WSHttpBinding_ILogging"
+        contract="OneCExceptionLogger.ILogging" name="WSHttpBinding_ILogging" >
+        <identity>
+          <dns value="localhost"/>
+        </identity>
+      </endpoint>-->
+
+
+      <!--<endpoint address="http://onecsitcoresrvs.cognizant.com/ExceptionLogging/Logging.svc" binding="wsHttpBinding"
+               bindingConfiguration="WSHttpBinding_ILogging" contract="ExceptionLogging.ILogging" name="WSHttpBinding_ILogging">
+        <identity>
+          <dns value="localhost" />
+        </identity>
+      </endpoint>-->
+
+
+      <endpoint address="http://onecsitcoresrvs.cognizant.com/ExceptionLogging/Logging.svc"
+               binding="wsHttpBinding" bindingConfiguration="WSHttpBinding_ILogging"
+               contract="OneCException.ILogging" name="WSHttpBinding_ILogging">
+        <identity>
+          <dns value="localhost" />
+        </identity>
+      </endpoint>
+      
+      
+      <endpoint address="http://onecsitcoresrvs.cognizant.com/SharedStorage/DocumentUploadService.svc"
+        binding="basicHttpBinding" bindingConfiguration="BasicHttpMtomBinding"
+        contract="DocUploadServiceRef.IDocumentUploadService" name="BasicHttpMtomBinding" />
+      <endpoint address="http://onecsitappssrvs.cognizant.com/2235/Service1.svc"
+        binding="basicHttpBinding" bindingConfiguration="BasicHttpBinding_IService1"
+        contract="DataCenterServiceRef.IService1" name="BasicHttpBinding_IService1" />
+      <!--<endpoint address="https://ctsc00988979201.cts.com/2235/Service1.svc"
+        binding="basicHttpBinding" bindingConfiguration="BasicHttpsBinding_IService1"
+        contract="DataCenterServiceRef.IService1" name="BasicHttpsBinding_IService1" />-->
+    </client>
+  </system.serviceModel>
+<startup><supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.0" /></startup>
+  <runtime>
+    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <dependentAssembly>
+        <assemblyIdentity name="Microsoft.Exchange.WebServices" publicKeyToken="31bf3856ad364e35" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-14.0.0.0" newVersion="14.0.0.0" />
+      </dependentAssembly>
+    </assemblyBinding>
+  </runtime>
+</configuration>
