@@ -1,0 +1,37 @@
+//-----------------------------------------------------------------------
+// <copyright file="CommunicatorBLL.cs" company="CTS">
+//     Copyright (c) . All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace BusinessManager
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+
+    /// <summary>
+    /// To define Communicator Functionalities
+    /// </summary>
+    [Serializable]
+    public class CommunicatorBLL
+    {     
+        /// <summary>
+        /// Gets or sets TransactionParameters
+        /// </summary>            
+        public TransactionParameters TransactionParameters
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets TemplateParameters
+        /// </summary>
+        public TemplateParameters TemplateParameters
+        {
+            get;
+            set;
+        }
+    }
+}
