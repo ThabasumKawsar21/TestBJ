@@ -1,0 +1,442 @@
+//-----------------------------------------------------------------------
+// <copyright file="Exchange2010Service.cs" company="CTS">
+//     Copyright (c) . All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace BusinessManager
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Configuration;
+    using System.DirectoryServices;
+    using System.Globalization;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
+    using System.Net.Security;
+    using System.Security;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Text;
+    using System.Text.RegularExpressions;
+    using System.Xml;
+    using MailerDAL;
+    using Microsoft.Exchange.WebServices.Data;
+
+    /// <summary>
+    /// Exchange Server functionality
+    /// </summary>
+    public class Exchange2010Service
+    {
+        /// <summary>
+        /// define Exchange Server
+        /// </summary>
+        private ExchangeService exch2010 = new ExchangeService();
+
+        /// <summary>            
+        /// Initializes a new instance of the Exchange2010Service class
+        /// </summary>
+        public Exchange2010Service()
+        {
+            string strUserId = string.Empty, strcodeword = string.Empty, strDomain = string.Empty, strEwsUrl = string.Empty;
+            strUserId = ConfigurationManager.AppSettings["MailBoxUserID"].Trim();
+            strcodeword = ConfigurationManager.AppSettings["MailBoxUservalue"].Trim();
+            var securePassword = new SecureString();
+            foreach (var c in strcodeword)
+            {
+                securePassword.AppendChar(c);
+            }
+
+            strDomain = ConfigurationManager.AppSettings["DomainName"].Trim();
+            strEwsUrl = ConfigurationManager.AppSettings["ExchangeServerURL"].Trim();
+            this.exch2010.Credentials = new NetworkCredential(strUserId, securePassword, strDomain);
+            this.exch2010.Url = new Uri(strEwsUrl);
+            ServicePointManager.ServerCertificateValidationCallback = delegate(object obj, X509Certificate certificate, X509Chain chain, 
+            SslPolicyErrors errors) 
+            { 
+                return true; 
+            };
+        }
+
+        /// <summary>
+        /// Create Appointment
+        /// </summary>
+        /// <param name="subject">Appointment Subject</param>
+        /// <param name="body">Appointment Body</param>
+        /// <param name="startDate">Start Date</param>
+        /// <param name="endDate">End Date</param>
+        /// <param name="mailId">Mail ID</param>
+        /// <param name="location">Location Name</param>
+        /// <returns>status of request</returns>
+        public string CreateAppointment(
+            string subject, 
+            string body, 
+            DateTime startDate, 
+            DateTime endDate, 
+            string mailId, 
+            string location)
+        {
+            try
+            {
+                Appointment appointment = new Appointment(this.exch2010);
+                appointment.Subject = subject;
+                appointment.Body = new MessageBody(BodyType.HTML, body);
+                appointment.Body = body;
+                appointment.Start = startDate;
+                appointment.End = endDate;
+                appointment.Sensitivity = Microsoft.Exchange.WebServices.Data.Sensitivity.Normal;
+                appointment.Importance = Microsoft.Exchange.WebServices.Data.Importance.High;
+                appointment.RequiredAttendees.Add(mailId.Trim());
+                appointment.Location = location;
+                appointment.Save();
+                appointment.Load();
+                return appointment.ICalUid;
+            }
+            catch (ServiceResponseException ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// Convert Hex String ToByte Array
+        /// </summary>
+        /// <param name="hexString">string need to convert</param>
+        /// <returns>byte array</returns>
+        public byte[] ConvertHexStringToByteArray(string hexString)
+        {
+            if (hexString.Length % 2 != 0)
+            {
+                throw new ArgumentException(
+                 string.Format(
+                 CultureInfo.InvariantCulture, 
+                "The binary key cannot have an odd number of digits: {0}", 
+                 hexString));
+            }
+
+            byte[] hexAsBytes = new byte[hexString.Length / 2];
+            for (int index = 0; index < hexAsBytes.Length; index++)
+            {
+                string byteValue = hexString.Substring(index * 2, 2);
+                hexAsBytes[index] = byte.Parse(byteValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            }
+
+            return hexAsBytes;
+        }
+
+        /// <summary>
+        /// UnBlock Appointment
+        /// </summary>
+        /// <param name="uid">UID Value</param>
+        /// <param name="subject">Appointment subject</param>
+        /// <returns>status of request</returns>
+        public bool UnBlockFromCalender(string uid, string subject)
+        {
+            try
+            {
+                FindItemsResults<Item> results = null;
+                Exchange2010Service objExchange2010Service = new Exchange2010Service();
+                string propStringValue = uid;
+                ExtendedPropertyDefinition uidProp = 
+                    new ExtendedPropertyDefinition(
+                        DefaultExtendedPropertySet.Meeting, 
+                        0x23, 
+                        MapiPropertyType.Binary);
+                SearchFilter searchFilter = 
+                    new SearchFilter.IsEqualTo(
+                        uidProp, 
+                        Convert.ToBase64String(this.ConvertHexStringToByteArray(propStringValue)));
+                ItemView itemData = new ItemView(int.MaxValue);
+                objExchange2010Service.exch2010.TraceEnabled = false;
+                results = objExchange2010Service.exch2010.FindItems(WellKnownFolderName.Calendar, searchFilter, itemData);
+
+                foreach (var item in results)
+                {
+                    Appointment appointment = Appointment.Bind(objExchange2010Service.exch2010, item.Id);
+                    appointment.CancelMeeting(subject);
+                }
+
+                if (results.Count() > 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Update Block
+        /// </summary>
+        /// <param name="uid">UID Id</param>
+        /// <param name="body">Appointment Body</param>
+        /// <param name="startDate">start Date</param>
+        /// <param name="endDate">End Date</param>
+        /// <param name="location">Location Name</param>
+        /// <returns>status of request</returns>
+        public bool UpdateBlockFromCalender(string uid, string body, DateTime startDate, DateTime endDate, string location)
+        {
+            try
+            {
+                FindItemsResults<Item> results = null;
+                Exchange2010Service objExchange2010Service = new Exchange2010Service();
+                string propStringValue = uid;
+                ExtendedPropertyDefinition uidProp = 
+                    new ExtendedPropertyDefinition(
+                        DefaultExtendedPropertySet.Meeting, 
+                        0x23, 
+                        MapiPropertyType.Binary);
+                SearchFilter searchFilter = 
+                    new SearchFilter.IsEqualTo(
+                        uidProp, 
+                        Convert.ToBase64String(this.ConvertHexStringToByteArray(propStringValue)));
+                ItemView itemData = new ItemView(int.MaxValue);
+                objExchange2010Service.exch2010.TraceEnabled = false;
+                results = objExchange2010Service.exch2010.FindItems(WellKnownFolderName.Calendar, searchFilter, itemData);
+                foreach (var item in results)
+                {
+                    Appointment appointment = Appointment.Bind(
+                        objExchange2010Service.exch2010,
+                        item.Id,
+                        new PropertySet(
+                    BasePropertySet.IdOnly, 
+                    AppointmentSchema.Start, 
+                    AppointmentSchema.ReminderDueBy,
+                    AppointmentSchema.End, 
+                    AppointmentSchema.StartTimeZone,
+                    AppointmentSchema.EndTimeZone, 
+                    AppointmentSchema.TimeZone));
+                    appointment.Body = new MessageBody(BodyType.HTML, body);
+                    appointment.Start = startDate;
+                    appointment.End = endDate;
+                    appointment.Sensitivity = Microsoft.Exchange.WebServices.Data.Sensitivity.Normal;
+                    appointment.Importance = Microsoft.Exchange.WebServices.Data.Importance.High;
+                    appointment.Location = location;
+                    appointment.Update(ConflictResolutionMode.AutoResolve);
+                }
+
+                if (results.Count() > 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        #region Removing items from mailbox
+
+        /// <summary>
+        /// function to send mail to personal mail id
+        /// </summary>
+        /// <param name="mailSubject">mail Subject</param>
+        /// <param name="mailBody">mail Body</param>
+        /// <param name="mailTo">mail To</param>
+        public void Sendtopersonalmail(string mailSubject, string mailBody, string mailTo)
+        {
+            try
+            {
+                ////bool isSend = false;
+                string[] multipleEmailAddress = null;
+                ////ExchangeService service = new ExchangeService();
+                ////Exchange2010Service service = new Exchange2010Service();
+                ////            service.AutodiscoverUrl(ConfigurationManager.AppSettings
+
+                ////["ExternalEmailBoxAddress"].ToString());
+                this.exch2010.AutodiscoverUrl("VisitorManagement@cognizant.com");
+                string userName = ConfigurationManager.AppSettings["MailBoxUserID"].ToString();
+                string codeword = ConfigurationManager.AppSettings["MailBoxUservalue"].ToString();
+                var securePassword = new SecureString();
+
+                foreach (var c in codeword)
+                {
+                    securePassword.AppendChar(c);
+                }
+
+                string domain = ConfigurationManager.AppSettings["DomainName"].ToString();
+                EmailMessage emailMessage = new EmailMessage(this.exch2010);
+                emailMessage.Subject = mailSubject;
+                string body = mailBody;
+                emailMessage.Body = body;
+                if (mailTo != null)
+                {
+                    multipleEmailAddress = mailTo.Split(';');
+                }
+
+                foreach (string email in multipleEmailAddress)
+                {
+                    if (!string.IsNullOrEmpty(email))
+                    {
+                        emailMessage.ToRecipients.Add(email);
+                    }
+                }
+
+                this.exch2010.Credentials = new System.Net.NetworkCredential(userName, securePassword, domain);
+                emailMessage.Send();
+                ////isSend = true;
+                ////return isSend;
+            }
+            catch (Exception ex)
+            {
+                /////ExceptionLogger.OneC_ExceptionLogger(ex, HttpContext.Current.Handler);
+                ManageMailerDal obj = new ManageMailerDal();
+                obj.LogBatchHistory(("Batch error SendEmailnew " + ex).Substring(0, 200), "NULL");
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// Select Outlook Notification unique id
+        /// </summary>
+        /// <param name="requestId">request Id</param>
+        /// <returns>GU ID</returns>
+        ////public string SelectOutlookNotificationGuid(int? requestId)
+        ////{
+        ////    DALClass objDal = new DALClass();
+        ////    return objDal.SelectOutlookNotificationGuid(requestId);
+        ////}
+
+        /////// <summary>
+        /////// Update Outlook Notification unique id
+        /////// </summary>
+        /////// <param name="requestId">request Id</param>
+        /////// <param name="guid">parameter id</param>
+        /////// <returns>Insert Data</returns>
+        ////public int UpdateOutlookNotificationGuid(List<int> requestId, string guid)
+        ////{
+        ////    DALClass objDal = new DALClass();
+        ////    return objDal.UpdateOutlookNotificationGuid(requestId, guid);
+        ////}
+
+        ////#region EWSremoveFromCalendar
+
+        /// <summary>       
+        /// Function for removing Old and outdated Meeting items from calendar
+        /// </summary>      
+        private void EWSremoveFromCalendar()
+        {
+            try
+            {
+                Exchange2010Service objExchange2010Service = new Exchange2010Service();
+                DateTime searchdate = DateTime.Now.AddDays(-7);
+                SearchFilter filterval = new SearchFilter.IsLessThan(AppointmentSchema.Start, searchdate);
+                Folder folder = Folder.Bind(objExchange2010Service.exch2010, WellKnownFolderName.Calendar);
+                FindItemsResults<Item> findresults = folder.FindItems(filterval, new ItemView(1000));
+                foreach (var item in findresults)
+                {
+                    Appointment appointment = Appointment.Bind(objExchange2010Service.exch2010, item.Id);
+                    appointment.Delete(DeleteMode.HardDelete, SendCancellationsMode.SendToNone);
+                }
+            }
+            catch (ServiceResponseException ex)
+            {
+                throw ex;
+            }
+        }
+        #endregion
+
+        #region EWSremoveUndelivered_OutOfOffice_ForwardMail
+
+        /// <summary>
+        /// Function for removing undelivered
+        /// </summary>
+        private void EWSremoveUndelivered_OutOfOffice_ForwardMail()
+        {
+            try
+            {
+                Exchange2010Service objExchange2010Service = new Exchange2010Service();
+                List<SearchFilter> searchFilterCollection = new List<SearchFilter>();
+                searchFilterCollection.Add(
+                    new SearchFilter.ContainsSubstring(
+                    ItemSchema.ItemClass, 
+                    "IPM.Note.Rules.OofTemplate.Microsoft"));
+                searchFilterCollection.Add(
+                    new SearchFilter.ContainsSubstring(
+                    ItemSchema.ItemClass, 
+                    "REPORT.IPM.Schedule.Meeting.Request.NDR"));
+                searchFilterCollection.Add(
+                        new SearchFilter.ContainsSubstring(
+                        ItemSchema.ItemClass, 
+                        "REPORT.IPM.Note.NDR"));
+                searchFilterCollection.Add(
+                    new SearchFilter.ContainsSubstring(
+                    ItemSchema.ItemClass, 
+                    "IPM.Schedule.Meeting.Notification.Forward"));
+                searchFilterCollection.Add(
+                    new SearchFilter.ContainsSubstring(
+                    ItemSchema.ItemClass, 
+                    "IPM.Note.Rules.ReplyTemplate.Microsoft"));
+                searchFilterCollection.Add(
+                    new SearchFilter.ContainsSubstring(
+                    ItemSchema.ItemClass, 
+                    "IPM.Note.Rules.ExternalOofTemplate.Microsoft"));
+                searchFilterCollection.Add(
+                    new SearchFilter.ContainsSubstring(
+                    ItemSchema.ItemClass, 
+                    "REPORT.IPM.Schedule.Meeting.Canceled.NDR"));
+                searchFilterCollection.Add(
+                    new SearchFilter.ContainsSubstring(
+                    ItemSchema.ItemClass, 
+                    "IPM.Note.NotSupportedICal"));
+                SearchFilter searchFilter = new SearchFilter.SearchFilterCollection(LogicalOperator.Or, searchFilterCollection.ToArray());
+                ItemView view = new ItemView(int.MaxValue);
+                view.PropertySet = new PropertySet(ItemSchema.ItemClass, ItemSchema.Subject);
+                FindItemsResults<Item> findresults = objExchange2010Service.exch2010.FindItems(WellKnownFolderName.Inbox, searchFilter, view);
+                foreach (var item in findresults)
+                {
+                    item.Delete(DeleteMode.HardDelete);
+                }
+            }
+            catch (ServiceResponseException ex)
+            {
+                throw ex;
+            }
+        }
+        #endregion
+
+        #region EWSremoveFromSentItems
+        /// <summary>
+        /// function to remove items from send items folder
+        /// </summary>
+        #endregion
+
+        #region EWSremoveFromDrafts
+        /// <summary>
+        /// function to remove items from drafts folder
+        /// </summary>
+        private void EWSremoveFromDrafts()
+        {
+            try
+            {
+                Exchange2010Service objExchange2010Service = new Exchange2010Service();
+                ItemView view = new ItemView(int.MaxValue);
+                SearchFilter searchFilter = 
+                    new SearchFilter.IsLessThanOrEqualTo(
+                        ItemSchema.DateTimeCreated,
+                        DateTime.Now);
+                FindItemsResults<Item> findResults;
+                findResults = objExchange2010Service.exch2010.FindItems(WellKnownFolderName.Drafts, searchFilter, view);
+                foreach (var item in findResults)
+                {
+                    item.Delete(DeleteMode.HardDelete);
+                }
+            }
+            catch (ServiceResponseException ex)
+            {
+                throw ex;
+            }
+        }
+        #endregion
+    }   
+}
