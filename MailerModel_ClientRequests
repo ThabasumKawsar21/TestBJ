@@ -1,0 +1,58 @@
+// -----------------------------------------------------------------------
+// <copyright file="ClientRequests.cs" company="CTS">
+//     Copyright (c) . All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
+namespace MailerModel
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+
+    /// <summary>
+    /// Client Requests
+    /// </summary>
+    public class ClientRequests
+    {
+        /// <summary>
+        /// Gets or sets RequestID
+        /// </summary>
+        public int RequestID { get; set; }
+
+        /// <summary>
+        /// Gets or sets HostName
+        /// </summary>
+        public string HostName { get; set; }
+
+        /// <summary>
+        /// Gets or sets HostID
+        /// </summary>
+        public string HostID { get; set; }
+
+        /// <summary>
+        /// Gets or sets VisitDate
+        /// </summary>
+        public string VisitDate { get; set; }
+
+        /// <summary>
+        /// Gets or sets Location Name
+        /// </summary>
+        public string LocationName { get; set; }
+
+        /// <summary>
+        /// Gets or sets Location City
+        /// </summary>
+        public string LocationCity { get; set; }
+
+        /// <summary>
+        /// Gets or sets Client First Name
+        /// </summary>
+        public string ClientFirstName { get; set; }
+
+        /// <summary>
+        /// Gets or sets Client Last Name
+        /// </summary>
+        public string ClientLastName { get; set; }
+    }
+}
