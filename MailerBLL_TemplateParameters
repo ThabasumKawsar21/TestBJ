@@ -1,0 +1,62 @@
+// -----------------------------------------------------------------------
+// <copyright file="SMS.cs" company="CTS">
+// Copyright (c) . All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
+namespace MailerBLL
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using BusinessManager;
+
+    /// <summary>
+    /// SMS class
+    /// </summary>
+    [Serializable]
+    public class SMS
+    {
+        /// <summary>
+        /// short message as Empty
+        /// </summary>
+        private string shortMeassage = string.Empty;
+
+        /// <summary>
+        /// short message as Empty
+        /// </summary>
+        private TransactionParameters transactionparameters = null;
+
+        /// <summary>
+        /// Gets or sets ShortMessage
+        /// </summary>     
+        public string ShortMessage
+        {
+            get
+            {
+                return this.shortMeassage;
+            }
+
+            set
+            {
+                this.shortMeassage = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets TransactionParameters
+        /// </summary>            
+        public TransactionParameters TransactionParameters
+        {
+            get
+            {
+                return this.transactionparameters;
+            }
+
+            set
+            {
+                this.transactionparameters = value;
+            }
+        }
+    }
+}
