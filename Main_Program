@@ -1,0 +1,294 @@
+
+namespace VMSmailerBatch
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Data;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Xml.Linq;
+    using System.Xml.Serialization;
+    using MailerBLL;
+    using MailerModel;        
+    using Microsoft.Exchange.WebServices.Data;
+    using VMSmailerBatch.DataCenterServiceRef;
+    using BusinessManager;
+
+    /// <summary>
+    /// Mail batch starting from here
+    /// </summary>
+    public class Program
+    {
+        /// <summary>
+        /// Main method
+        /// </summary>
+        public static void Main()
+        {
+            Program pgm = new Program();
+
+            ////// pgm.DeleteMail(); 
+            //////pgm.DeleteExpiredSavedRequest();
+            //////pgm.FetchDataCenterDetailsForInsert();
+           pgm.SendMailsToSubmittedRequest();
+            pgm.SendRemainderMailsToCollectPass();
+            pgm.SendRemainderMailsToReturnPass();
+            pgm.CallMethod();
+            if (System.Configuration.ConfigurationManager.AppSettings["VcardMails"] == "Y")
+            {
+                pgm.SendCheckinMail();
+                pgm.SendCheckoutMail();
+            }
+
+        }
+
+        /// <summary>
+        /// Starting method
+        /// </summary>
+        public void CallMethod()
+        {
+            ManageMailerBl manageMailerBusiness = new ManageMailerBl();
+            manageMailerBusiness.GetClientVisitRequests();
+        }
+
+        ///// <summary>
+        ///// 
+        /////</summary>
+        // public void DeleteMail()
+        // {
+        //    ReadMailbox mailboxreader = new ReadMailbox();
+        //    FindItemsResults<Item> findDeleteResults = mailboxreader.ReadMailBoxForDelete();
+        //    mailboxreader.DeleteMail(findDeleteResults);            
+        // }
+
+        /// <summary>
+        /// Delete saved request 
+        /// </summary>
+        public void DeleteExpiredSavedRequest()
+        {
+            DeleteExpiredSavedRequestBL deleteExpiredSavedRequestBL = new DeleteExpiredSavedRequestBL();
+            deleteExpiredSavedRequestBL.DeleteExpiredSavedRequests();
+        }
+
+        /// <summary>
+        /// Fetch Data center details for insert
+        /// </summary>
+        public void FetchDataCenterDetailsForInsert()
+        {
+            DataCenterBL dcbl = new DataCenterBL();
+            DataTable dcdetails = new DataTable();
+            DateTime fromDatedt;
+            Service1Client datacenter = new Service1Client();
+            ////DateTime fromtime;
+            ////DateTime totime;
+            int dcuniqueid;
+            dcdetails = dcbl.FetchDataCenterDetailsForInsertBL();
+            if (dcdetails.Rows.Count > 0)
+            {
+                for (int i = 0; i < dcdetails.Rows.Count; i++)
+                {
+                    fromDatedt = Convert.ToDateTime(dcdetails.Rows[i]["FromDate"]);
+                    ////fromtime = Convert.ToDateTime(DCDetails.Rows[i]["FromTime"]);
+                    ////totime = Convert.ToDateTime(DCDetails.Rows[i]["ToTime"]);
+
+                    string vmsfromdate = fromDatedt.ToString("MM-dd-yyyy");
+                    ////string dc_fromtime = string.Concat(vmsfromdate[1], ' ', vmsfromdate[2]);
+                    ////string dc_totime = string.Concat(vmstodate[1], ' ', vmstodate[2]);
+                    ////string dc_time = string.Concat(dc_fromtime, '-', dc_totime);
+                    string dc_fromtime = dcdetails.Rows[i]["FromTime"].ToString();
+                    string dc_totime = dcdetails.Rows[i]["ToTime"].ToString(); 
+                    string dc_time = string.Concat(dc_fromtime, '-', dc_totime);
+                    string dcname = string.Concat(dcdetails.Rows[i]["FirstName"].ToString(), ' ', dcdetails.Rows[i]["LastName"].ToString());
+                    dcuniqueid = datacenter.ReturnDCID(
+                        dcdetails.Rows[i]["TempUnique_Id"].ToString(), dcdetails.Rows[i]["Facility"].ToString(), dcdetails.Rows[i]["Purpose"].ToString(), vmsfromdate, dc_time, dcdetails.Rows[i]["Createdby"].ToString(), dcdetails.Rows[i]["VisitorID"].ToString(), dcname, dcdetails.Rows[i]["Gender"].ToString(), dcdetails.Rows[i]["Company"].ToString());
+                    
+                    /////detail.DCUniqueId, location, detail.Purpose, vmsfromdate[0], dc_time, Common.Common.UserId(), detail.VisitorID.ToString(), dcname, detail.Gender, detail.Organization);
+                    dcbl.UpdateDCIDBL(dcuniqueid.ToString(), dcdetails.Rows[i]["TempUnique_Id"].ToString(), dcdetails.Rows[i]["RequestID_VMS"].ToString());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Send mails to submitted request
+        /// </summary>
+        public void SendMailsToSubmittedRequest()
+        {
+            ManageMailerBl mailbl = new ManageMailerBl();
+            mailbl.GetDetailsForMailBL();
+        }
+
+        /// <summary>
+        /// Send remainder mails to submitted request
+        /// </summary>
+        public void SendRemainderMailsToCollectPass()
+        {
+            ManageMailerBl mailbl = new ManageMailerBl();
+            mailbl.SendRemainderMailsToCollectPass();
+        }
+
+        /// <summary>
+        /// Send remainder mails to submitted request
+        /// </summary>
+        public void SendRemainderMailsToReturnPass()
+        {
+            ManageMailerBl mailbl = new ManageMailerBl();
+            mailbl.SendRemainderMailsToReturnPass();
+        }
+        /// <summary>
+        /// Send consolidated check-in mails
+        /// </summary>
+        public void SendCheckinMail()
+        {
+            
+                SendCheckinNotificationToHost();
+           
+
+
+        }
+        /// <summary>
+        /// Send consolidated check-out mails
+        /// </summary>
+        public void SendCheckoutMail()
+        {
+            SendCheckoutMailNotificationToHost();
+        }
+        /// <summary>
+        /// function to send mail notification for visitor check in
+        /// </summary>
+        private static void SendCheckinNotificationToHost()
+        {
+            
+          
+            MailNotification objMailNotofication = new MailNotification();
+            ManageMailerBl mailbl = new ManageMailerBl();
+
+
+            DataTable mailAttachment = new DataTable();
+            DataTable filteredDT = new DataTable();
+                string date = DateTime.Now.ToString(); ;
+                
+                DataTable cardinfo = mailbl.GetVisitorCheckinDeatilsforMailProcess();
+            if (cardinfo.Rows.Count > 0)
+
+            {
+                mailAttachment.Columns.Add("VisitorName", typeof(string));
+                mailAttachment.Columns.Add("VisitorType", typeof(string));
+                mailAttachment.Columns.Add("Check-in Date and Time", typeof(string));
+                mailAttachment.Columns.Add("Checked-in Location", typeof(string));
+                mailAttachment.Columns.Add("VcardNumber", typeof(string));
+                var distinctValues = cardinfo.AsEnumerable()
+                             .Select(row => new
+                             {
+                                 host = row.Field<string>("HostID"),
+                             })
+                             .Distinct().ToList();
+                foreach (var val in distinctValues)
+                {
+                    filteredDT = (from t in cardinfo.AsEnumerable()
+                                  where t.Field<string>("HostID").Equals(val.host.ToString())
+                                  select t).CopyToDataTable();
+                    foreach (DataRow row in filteredDT.Rows)
+                    {
+                        string[] ccf = row["Facility"].ToString().Split('-');
+                        string Facility = string.Empty;
+                        if (ccf.Count() > 2)
+                        {
+                            if (!string.IsNullOrEmpty(row["Facility"].ToString().Split('-')[2]))
+                            {
+                                Facility = row["Facility"].ToString().Split('-')[1] + "-" + row["Facility"].ToString().Split('-')[2];
+                            }
+
+                            mailAttachment.Rows.Add(row["VisitorName"], row["VisitorType"], Convert.ToDateTime(row["BadgeIssuedDate"]).ToString("dd-MM-yyy HH:mm"), row["Facility"].ToString().Split('-')[1] + "-" + row["Facility"].ToString().Split('-')[2], row["BadgeNo"]);
+                        }
+                        else
+                        {
+                            Facility = row["Facility"].ToString().Split('-')[1];
+                            mailAttachment.Rows.Add(row["VisitorName"], row["VisitorType"], Convert.ToDateTime(row["BadgeIssuedDate"]).ToString("dd-MM-yyy HH:mm"), row["Facility"].ToString().Split('-')[0] + "-" + row["Facility"].ToString().Split('-')[1], row["BadgeNo"]);
+                        }
+                    }
+                    objMailNotofication.SendMail(val.host.ToString().Split('(')[0], DateTime.Now.ToString("dd/MMM/yyyy"), filteredDT.Rows[0]["RequestID"].ToString().ToString(), val.host.ToString().Split('(')[1].Trim(new Char[] { ')' }), mailAttachment);
+                    filteredDT.Clear();
+                    mailAttachment.Clear();
+
+                }
+
+            }
+
+        }
+        /// <summary>
+        /// function to send mailnotification for visitor checkout
+        /// </summary>
+        private static void SendCheckoutMailNotificationToHost()
+        {
+            MailNotification objMailNotofication = new MailNotification();
+            ManageMailerBl mailbl = new ManageMailerBl();
+
+
+            DataTable mailAttachment = new DataTable();
+            DataTable filteredDT = new DataTable();
+            string date = DateTime.Now.ToString(); ;
+            
+            DataTable cardinfo = mailbl.GetVisitorCheckoutDeatilsforMailProcess();
+            if (cardinfo.Rows.Count > 0)
+            {
+                mailAttachment.Columns.Add("Visitor Name", typeof(string));
+                mailAttachment.Columns.Add("Visitor Type", typeof(string));
+                mailAttachment.Columns.Add("Number of  visitor cards issued", typeof(string));
+                mailAttachment.Columns.Add("Card Number", typeof(string));
+                mailAttachment.Columns.Add("Checkout Location", typeof(string));
+                mailAttachment.Columns.Add("Expected Check-out time", typeof(string));
+                mailAttachment.Columns.Add("Actual Check-out time", typeof(string));
+                mailAttachment.Columns.Add("Visitor badge return status", typeof(string));
+                string Facility = string.Empty;
+                var distinctValues = cardinfo.AsEnumerable()
+                                .Select(row => new
+                                {
+                                    host = row.Field<string>("HostID"),
+                                })
+                                .Distinct().ToList();
+                foreach (var val in distinctValues)
+                {
+                    filteredDT = (from t in cardinfo.AsEnumerable()
+                                  where t.Field<string>("HostID").Equals(val.host.ToString())
+                                  select t).CopyToDataTable();
+                    foreach (DataRow row in filteredDT.Rows)
+                    {
+                        string[] ccf = row["Facility"].ToString().Split('-');
+                        if (ccf.Count() > 2)
+                        {
+                            if (!string.IsNullOrEmpty(row["Facility"].ToString().Split('-')[2]))
+                            {
+                                Facility = row["Facility"].ToString().Split('-')[1] + "-" + row["Facility"].ToString().Split('-')[2];
+                            }
+                            mailAttachment.Rows.Add(row["VisitorName"], row["VisitorType"], row["cardCount"], row["BadgeNo"], row["Facility"].ToString().Split('-')[1] + "-" + row["Facility"].ToString().Split('-')[2], row["ExpectedOutTime"], Convert.ToDateTime(row["ActualTimeOut"]).ToString("dd-MM-yyy HH:mm"), row["BadgeStatus"]);
+                        }
+                        else
+                        {
+                            Facility = row["Facility"].ToString().Split('-')[1];
+                            mailAttachment.Rows.Add(row["VisitorName"], row["VisitorType"], row["cardCount"], row["BadgeNo"], row["Facility"].ToString().Split('-')[0] + "-" + row["Facility"].ToString().Split('-')[1], row["ExpectedOutTime"], Convert.ToDateTime(row["ActualTimeOut"]).ToString("dd-MM-yyy HH:mm"), row["BadgeStatus"]);
+                        }
+                        //mailAttachment.Rows.Add(row["VisitorName"], row["VisitorType"], cardinfo.Rows.Count, row["BadgeNo"], row["Facility"].ToString().Split('-')[1] + "-" + row["Facility"].ToString().Split('-')[2], row["ExpectedOutTime"], Convert.ToDateTime(row["ActualTimeOut"]).ToString("dd-MM-yyy HH:mm"), row["BadgeStatus"]);
+                       
+                    }
+                    string name = val.host.ToString().Split('(')[0];
+                    string[] first_Last = name.Split(',');
+                     first_Last = name.Split(' ');
+                    string hostname = first_Last[1].ToString().Trim() + " " + first_Last[0].ToString().Trim();
+
+                    //  objMailNotofication.SendMail_Checkout(val.host.ToString().Split('(')[0], filteredDT.Rows[0]["RequestID"].ToString().ToString(), val.host.ToString().Split('(')[1].Trim(new Char[] { ')' }), mailAttachment);
+                    objMailNotofication.SendMail_Checkout(hostname, filteredDT.Rows[0]["RequestID"].ToString().ToString(), val.host.ToString().Split('(')[1].Trim(new Char[] { ')' }), mailAttachment);
+                    filteredDT.Clear();
+                    mailAttachment.Clear();
+
+                }
+            }
+        }
+
+    }
+}
