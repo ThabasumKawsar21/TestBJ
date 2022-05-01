@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+
+
+  <system.serviceModel>
+    <bindings>
+      <basicHttpBinding>
+        <binding name="BasicHttpMtomBinding" messageEncoding="Mtom" />
+      </basicHttpBinding>
+      <netTcpBinding>
+        <binding name="NetTcpBinding" transferMode="Streamed">
+          <security mode="None" />
+        </binding>
+      </netTcpBinding>
+      <wsHttpBinding>
+        <binding name="WSHttpBinding_IRequestUnifiedVASContract">
+          <security mode="None"/>
+        </binding>
+      </wsHttpBinding>
+    </bindings>
+    <client>
+      <endpoint address="http://onecuatcoresrvs.cognizant.com/Messaging/OneCommunicator/Notification/VAS.svc" binding="wsHttpBinding" bindingConfiguration="WSHttpBinding_IRequestUnifiedVASContract" contract="OneCommunicatorServiceClient.IRequestUnifiedVASContract" name="WSHttpBinding_IRequestUnifiedVASContract">
+        <identity>
+          <dns value="localhost"/>
+        </identity>
+      </endpoint>
+      <endpoint address="http://onecognizantcoresrvs.cognizant.com/SharedStorage/DocumentUploadService.svc"
+        binding="basicHttpBinding" bindingConfiguration="BasicHttpMtomBinding"
+        contract="DocUploadServiceRef.IDocumentUploadService" name="BasicHttpMtomBinding" />
+      <endpoint address="net.tcp://ctsintbmvoprcs4.cts.com/SharedStorage/DocumentUploadService.svc"
+        binding="netTcpBinding" bindingConfiguration="NetTcpBinding"
+        contract="DocUploadServiceRef.IDocumentUploadService" name="NetTcpBinding" />
+    </client>
+  </system.serviceModel>
+<startup><supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.6"/></startup></configuration>
