@@ -1,0 +1,342 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MailerModel
+{
+    public class MailTemplate
+    {
+        /// <summary>
+        /// One communicator mail parameters
+        /// </summary>
+        public class OneCommunicator {
+            public OneCommunicatorTransactionParams TransactionParameters
+            {
+                get;
+                set;
+            }
+            public ChannelParams ChannelParameters
+            {
+                get;
+                set;
+            }
+        }
+        /// <summary>
+        /// Class for transaction parameters
+        /// </summary>
+        public class OneCommunicatorTransactionParams{
+            /// <summary>
+            /// Gets or sets Recipients
+            /// </summary>
+            public string Recipients
+            {
+                get;
+                set;
+            }
+
+            /// <summary>
+            /// Gets or sets RequestId
+            /// </summary>
+            public string RequestId
+            {
+                get;
+                set;
+            }
+
+            /// <summary>
+            /// Gets or sets Process
+            /// </summary>
+            public string Process
+            {
+                get;
+                set;
+            }
+
+            /// <summary>
+            /// Gets or sets GlobalAppId
+            /// </summary>
+            public string GlobalAppId
+            {
+                get;
+                set;
+            }
+        }
+        /// <summary>
+        /// class for channel parameters
+        /// </summary>
+        public class ChannelParams {
+
+            public EmailTemplate Email
+            {
+                get;
+                set;
+            }
+        }
+        /// <summary>
+        /// class for email parameters
+        /// </summary>
+        public class EmailTemplate
+        {
+
+            private string cc = string.Empty;
+            private string bcc = string.Empty;
+            /// <summary>
+            /// Gets or sets CC
+            /// </summary>
+            public string CC
+            {
+                get
+                {
+                    return this.cc;
+                }
+
+                set
+                {
+                    this.cc = value;
+                }
+            }
+
+            /// <summary>
+            /// Gets or sets  BCC
+            /// </summary>
+            public string BCC
+            {
+                get
+                {
+                    return this.bcc;
+                }
+
+                set
+                {
+                    this.bcc = value;
+                }
+            }
+            public TemplateParams TemplateParameters
+            {
+                get;
+                set;
+            }
+
+        }
+
+        /// <summary>
+        /// class  for template parameters
+        /// </summary>
+        public class TemplateParams {
+            /// <summary>
+            /// host name
+            /// </summary>
+            private string hostname = string.Empty;
+            /// <summary>
+            /// visitor name
+            /// </summary>
+            private string visitorname = string.Empty;
+            /// <summary>
+            /// facility
+            /// </summary>
+            private string facility = string.Empty;
+            /// <summary>
+            /// in time
+            /// </summary>
+            private string intime = string.Empty;
+            /// <summary>
+            /// in date
+            /// </summary>
+            private string indate = string.Empty;
+            /// <summary>
+            /// manager
+            /// </summary>
+            private string manager = string.Empty;
+            /// <summary>
+            /// city
+            /// </summary>
+            private string city = string.Empty;
+            /// <summary>
+            /// from date
+            /// </summary>
+            private string fromdate = string.Empty;
+            /// <summary>
+            /// to date
+            /// </summary>
+            private string todate = string.Empty;
+            /// <summary>
+            /// country
+            /// </summary>
+            private string country = string.Empty;
+            /// <summary>
+            /// subject
+            /// </summary>
+            private string subject = string.Empty;
+
+            /// <summary>
+            /// gets or sets host name
+            /// </summary>
+            public string HostName
+            {
+                get
+                {
+                    return this.hostname;
+                }
+
+                set
+                {
+                    this.hostname = value;
+                }
+            }
+            /// <summary>
+            /// gets or sets visitor name
+            /// </summary>
+            public string VisitorName
+            {
+                get
+                {
+                    return this.visitorname;
+                }
+
+                set
+                {
+                    this.visitorname = value;
+                }
+            }
+            /// <summary>
+            /// gets or sets facility
+            /// </summary>
+            public string Facility
+            {
+                get
+                {
+                    return this.facility;
+                }
+
+                set
+                {
+                    this.facility = value;
+                }
+            }
+            /// <summary>
+            /// gets or sets in time
+            /// </summary>
+            public string InTime
+            {
+                get
+                {
+                    return this.intime;
+                }
+
+                set
+                {
+                    this.intime = value;
+                }
+            }
+            /// <summary>
+            /// gets or sets in date
+            /// </summary>
+            public string InDate
+            {
+                get
+                {
+                    return this.indate;
+                }
+
+                set
+                {
+                    this.indate = value;
+                }
+            }
+            /// <summary>
+            /// gets or sets manager
+            /// </summary>
+            public string Manager
+            {
+                get
+                {
+                    return this.manager;
+                }
+
+                set
+                {
+                    this.manager = value;
+                }
+            }
+            /// <summary>
+            /// gets or sets city
+            /// </summary>
+            public string City
+            {
+                get
+                {
+                    return this.city;
+                }
+
+                set
+                {
+                    this.city = value;
+                }
+            }
+            /// <summary>
+            /// gets or sets from date
+            /// </summary>
+            public string FromDate
+            {
+                get
+                {
+                    return this.fromdate;
+                }
+
+                set
+                {
+                    this.fromdate = value;
+                }
+            }
+            /// <summary>
+            /// gets or sets to date
+            /// </summary>
+            public string ToDate
+            {
+                get
+                {
+                    return this.todate;
+                }
+
+                set
+                {
+                    this.todate = value;
+                }
+            }
+            /// <summary>
+            /// gets or sets country
+            /// </summary>
+            public string Country
+            {
+                get
+                {
+                    return this.country;
+                }
+
+                set
+                {
+                    this.country = value;
+                }
+            }
+            /// <summary>
+            /// gets or sets subject
+            /// </summary>
+            public string Subject
+            {
+                get
+                {
+                    return this.subject;
+                }
+
+                set
+                {
+                    this.subject = value;
+                }
+            }
+        }
+
+      
+    }
+}
