@@ -1,0 +1,90 @@
+// -----------------------------------------------------------------------
+// <copyright file="ChannelParameters.cs" company="CTS">
+// Copyright (c) . All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
+
+namespace BusinessManager
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using MailerBLL;
+
+    /// <summary>
+    /// To define Channel Parameters
+    /// </summary>
+    [Serializable]
+    public class ChannelParameters
+    {
+        /// <summary>
+        /// SMS as null
+        /// </summary>        
+        private SMS sms = null;
+
+        /// <summary>
+        /// SMS as null
+        /// </summary>        
+        private Mobile mobile = null;
+
+        /// <summary>
+        /// Gets or sets Email
+        /// </summary>
+        public Email Email
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets OCS
+        /// </summary>
+        public string OCS
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets One Click
+        /// </summary>
+        public string OneClick
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets SMS
+        /// </summary>         
+        public SMS SMS
+        {
+            get
+            {
+                return this.sms;
+            }
+
+            set
+            {
+                this.sms = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets SMS
+        /// </summary>         
+        public Mobile Mobile
+            {
+            get
+                {
+                return this.mobile;
+                }
+
+            set
+                {
+                this.mobile = value;
+                }
+            }
+        }
+}
