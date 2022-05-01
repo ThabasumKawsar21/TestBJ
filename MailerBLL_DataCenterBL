@@ -1,0 +1,51 @@
+// -----------------------------------------------------------------------
+// <copyright file="DataCenterBL.cs" company="CTS">
+// Copyright (c) . All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
+namespace MailerBLL
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Data;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using BusinessManager;
+    using MailerDAL;
+    using MailerModel;
+
+    /// <summary>
+    /// data center BL
+    /// </summary>
+    public class DataCenterBL
+    {
+        #region Methods
+        /// <summary>
+        /// Fetch Data center details for insert 
+        /// </summary>
+        /// <returns>dc details</returns>
+        public DataTable FetchDataCenterDetailsForInsertBL()
+        {
+            DataTable dcdetails = new DataTable();
+            DataCenterDAL dcdal = new DataCenterDAL();
+            dcdetails = dcdal.FetchDataCenterDetailsForInsertDAL();
+            return dcdetails;
+        }
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Update DC unique ID
+        /// </summary>
+        /// <param name="dcuniqueid">dc unique id</param>
+        /// <param name="dctempuniqueud">dc temp unique id</param>
+        /// <param name="vmsrequestid">v m s request id</param>
+        public void UpdateDCIDBL(string dcuniqueid, string dctempuniqueud, string vmsrequestid)
+        {
+            DataCenterDAL dcdal = new DataCenterDAL();
+            dcdal.UpdateDCIDDAL(dcuniqueid, dctempuniqueud, vmsrequestid);
+        }
+        #endregion
+    }
+}
